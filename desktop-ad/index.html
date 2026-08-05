@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OneAD 桌機置底plus - Video + Banner Gallery Demo</title>
+<style>
+  :root {
+    --bar-h: clamp(220px, 27.8vw, 300px);   /* 依設計 300/1080 比例，可縮放 */
+    --tooltip-bg: #333;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #eee;
+    overflow: hidden;
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    color: #333;
+  }
+
+  /* ---- 網頁背景 (news.com) ---- */
+  .bg-web {
+    position: fixed; inset: 0;
+    background: url("./assets/r4.png") no-repeat top center;
+    background-size: 100% auto;
+    background-color: #fff;
+    z-index: 0;
+  }
+
+  /* ---- 底部滿版廣告 bar ---- */
+  #ad-bar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    width: 100vw;
+    height: var(--bar-h);
+    z-index: 20;
+    background: #000;
+    overflow: hidden;
+  }
+
+  /* 左右影片：各佔 27.8% */
+  .video-side {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 27.8vw;
+    overflow: hidden;
+    background: #000;
+  }
+  .video-side.left  { left: 0; }
+  .video-side.right { right: 0; }
+  .video-side video,
+  .video-side img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* ---- 中間 carousel ---- */
+  .carousel {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 27.8vw; right: 27.8vw;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .carousel-window {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;    /* 超出視窗的圖片切掉 */
+  }
+  .slides {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+  .slide {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 90%;
+    aspect-ratio: 16 / 9;
+    background-color: #444;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    border-radius: 6px;
+    transform: translate(-50%, -50%);
+    transition: transform .6s cubic-bezier(.4,0,.2,1);
+    will-change: transform;
+  }
+  .slide.s1 { background-image: url("./assets/r9.png"); }
+  .slide.s2 { background-image: url("./assets/r2.jpeg"); }
+  .slide.s3 { background-image: url("./assets/r8.png"); }
+
+  /* 頁面小圓點指示器 (bar 頂部中央) */
+  .dots {
+    position: absolute;
+    top: 10px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 8px;
+    z-index: 22;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.32);
+    transition: background .35s ease, width .35s ease;
+  }
+  .dot.active {
+    background: #fff;
+    width: 18px;
+    border-radius: 3px;
+  }
+
+  /* 左右箭頭 (需要在 hover-zone z-index:30 之上才能接收點擊) */
+  .arrow {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    width: 48px; height: 48px;
+    z-index: 31;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    cursor: pointer;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+  }
+  .arrow.prev { left: 12px;  background-image: url("./assets/s3.svg"); transform: translateY(-50%) scaleX(-1); }
+  .arrow.next { right: 12px; background-image: url("./assets/s4.svg"); }
+
+  /* count 倒數 */
+  .count {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px;
+    font-weight: 700;
+    z-index: 25;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .count.show { opacity: 1; }
+
+  /* 關閉鈕 (bar 上方 16px) */
+  .close-cut1 {
+    position: fixed;
+    left: 12px;
+    bottom: calc(var(--bar-h) + 16px);
+    width: 24px; height: 24px;
+    background: url("./assets/s2.svg") no-repeat center/contain;
+    z-index: 22;
+    cursor: pointer;
+    opacity: 0.9;
+  }
+
+  /* OneAD logo (bar 右下) */
+  .onead-logo {
+    position: absolute;
+    right: 8px; bottom: 8px;
+    width: 32px; height: 32px;
+    background: url("./assets/s1.svg") no-repeat center/contain;
+    z-index: 22;
+  }
+
+  /* hover 熱區 (整條 bar) */
+  .hover-zone {
+    position: absolute; inset: 0;
+    z-index: 30;
+    cursor: pointer;
+  }
+
+  /* ---- 假滑鼠 (吸睛) ---- */
+  .attract-cursor {
+    position: fixed;
+    left: 50%; bottom: var(--bar-h);
+    width: 40px; height: 40px;
+    margin-left: -20px;
+    background: url("./assets/s7.svg") no-repeat center/contain;
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
+  }
+  .attract-cursor.animate {
+    animation: cursor-loop 3.4s ease-in-out infinite;
+  }
+  @keyframes cursor-loop {
+    0%   { transform: translateY(-160px); opacity: 0; }
+    10%  { transform: translateY(-160px); opacity: 1; }
+    45%  { transform: translateY(calc(var(--bar-h) * 0.55));  opacity: 1; }
+    68%  { transform: translateY(calc(var(--bar-h) * 0.55));  opacity: 1; }
+    92%  { transform: translateY(-160px); opacity: 0; }
+    100% { transform: translateY(-160px); opacity: 0; }
+  }
+
+  /* 引導 tooltip "滑入看更多" — 貼齊 bar 上緣 */
+  .tooltip-scroll {
+    position: fixed;
+    left: 50%; bottom: calc(var(--bar-h) + 5px);   /* 箭頭尖端距 bar 頂部 5px */
+    transform: translate(-50%, 6px);
+    z-index: 51;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s ease, transform .25s ease;
+  }
+  .tooltip-scroll.show { opacity: 1; transform: translate(-50%, 0); }
+  .tooltip-scroll .body {
+    background: var(--tooltip-bg);
+    color: #fff;
+    font-size: 20px;
+    line-height: 40px;
+    padding: 6px 20px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  }
+  .tooltip-scroll .arrow-down {
+    position: absolute;
+    left: 50%; margin-left: -10px; bottom: -9px;
+    width: 20px; height: 10px;
+    background: var(--tooltip-bg);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+  }
+
+  /* ---- CUT2 全螢幕影音 ---- */
+  #cut2 {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .4s ease;
+  }
+  #cut2.show { opacity: 1; pointer-events: auto; }
+  #cut2 video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  #cut2 .close-cut2 {
+    position: absolute;
+    left: 24px; top: 24px;
+    width: 32px; height: 32px;
+    background: url("./assets/s2.svg") no-repeat center/contain;
+    cursor: pointer;
+    z-index: 101;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+  }
+  #cut2 .onead-logo {
+    right: 24px; bottom: 24px;
+  }
+</style>
+</head>
+<body>
+  <!-- 網頁背景 -->
+  <div class="bg-web"></div>
+
+  <!-- 滿版底部廣告 bar -->
+  <div id="ad-bar">
+    <!-- 左側影片 -->
+    <div class="video-side left">
+      <video src="./assets/hilux.mp4" autoplay muted loop playsinline preload="auto"></video>
+    </div>
+
+    <!-- 中間 carousel -->
+    <div class="carousel">
+      <div class="carousel-window">
+        <div class="slides">
+          <!-- 6 張 = [s3, s1, s2, s3, s1, s2] 讓 centerIdx 走 1→2→3→4 後,4 (s1) 與 1 (s1) 視覺相同,無縫跳回 -->
+          <div class="slide s3"></div>
+          <div class="slide s1"></div>
+          <div class="slide s2"></div>
+          <div class="slide s3"></div>
+          <div class="slide s1"></div>
+          <div class="slide s2"></div>
+        </div>
+      </div>
+      <div class="arrow prev"></div>
+      <div class="arrow next"></div>
+      <div class="count" id="count">3</div>
+    </div>
+
+    <!-- 右側 (靜態圖) -->
+    <div class="video-side right">
+      <img src="./assets/video-right.png" alt="HILUX" />
+    </div>
+
+    <!-- bar 上元素 -->
+    <div class="onead-logo"></div>
+
+    <!-- hover 熱區 -->
+    <div class="hover-zone" id="hoverZone"></div>
+  </div>
+
+  <!-- 關閉鈕 (置於 bar 上方 16px) -->
+  <div class="close-cut1"></div>
+
+  <!-- 假滑鼠 + 引導 tooltip -->
+  <div class="attract-cursor" id="attractCursor"></div>
+  <div class="tooltip-scroll" id="tooltipScroll">
+    <div class="body">滑入看更多</div>
+    <div class="arrow-down"></div>
+  </div>
+
+  <!-- CUT2 全螢幕影音 -->
+  <div id="cut2">
+    <video id="cut2Video" src="./assets/hilux.mp4" muted loop playsinline preload="auto"></video>
+    <div class="close-cut2" id="closeCut2"></div>
+    <div class="onead-logo"></div>
+  </div>
+
+<script>
+(function () {
+  const attractCursor = document.getElementById('attractCursor');
+  const tooltip       = document.getElementById('tooltipScroll');
+  const countEl       = document.getElementById('count');
+  const hoverZone     = document.getElementById('hoverZone');
+  const cut2El        = document.getElementById('cut2');
+  const cut2Video     = document.getElementById('cut2Video');
+  const closeCut2Btn  = document.getElementById('closeCut2');
+
+  let attractTimers = [];
+  let attractInterval = null;
+  let countTimer    = null;
+  let userEngaged   = false;
+  let inCountdown   = false;
+
+  function clearAttract() {
+    attractTimers.forEach(t => clearTimeout(t));
+    attractTimers = [];
+    if (attractInterval) { clearInterval(attractInterval); attractInterval = null; }
+    attractCursor.classList.remove('animate');
+    tooltip.classList.remove('show');
+  }
+
+  // 吸睛 loop：假滑鼠從 bar 上方往下滑進廣告，滑入時 tooltip 淡入，離開時淡出，循環
+  function startAttract() {
+    if (userEngaged) return;
+    clearAttract();
+    attractCursor.classList.add('animate');
+
+    const cycle = 3400; // 對應 CSS keyframes
+    const loop = () => {
+      if (userEngaged) return;
+      const t1 = setTimeout(() => {
+        if (!userEngaged) tooltip.classList.add('show');
+      }, 900);
+      const t2 = setTimeout(() => {
+        tooltip.classList.remove('show');
+      }, 2600);
+      attractTimers.push(t1, t2);
+    };
+    loop();
+    attractInterval = setInterval(() => {
+      if (userEngaged) { clearInterval(attractInterval); return; }
+      loop();
+    }, cycle);
+  }
+
+  function onUserEngage() {
+    if (userEngaged) return;
+    userEngaged = true;
+    clearAttract();
+    startCountdown();
+  }
+
+  function startCountdown() {
+    if (inCountdown) return;
+    inCountdown = true;
+    let n = 3;
+    countEl.textContent = n;
+    countEl.classList.add('show');
+
+    const tick = () => {
+      n--;
+      if (n <= 0) {
+        countEl.classList.remove('show');
+        goCut2();
+        return;
+      }
+      countEl.textContent = n;
+      countTimer = setTimeout(tick, 1000);
+    };
+    countTimer = setTimeout(tick, 1000);
+  }
+
+  function goCut2() {
+    cut2El.classList.add('show');
+    try { cut2Video.currentTime = 0; cut2Video.play(); } catch(e) {}
+  }
+
+  function backToCut1() {
+    cut2El.classList.remove('show');
+    try { cut2Video.pause(); } catch(e) {}
+  }
+
+  function reset() {
+    if (countTimer) { clearTimeout(countTimer); countTimer = null; }
+    inCountdown = false;
+    userEngaged = false;
+    countEl.classList.remove('show');
+    backToCut1();
+    startAttract();
+  }
+
+  // Events
+  hoverZone.addEventListener('mouseenter', onUserEngage);
+  hoverZone.addEventListener('touchstart', onUserEngage, { passive: true });
+
+  closeCut2Btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    reset();
+  });
+
+  // ---- Drawer 樣式輪播 ----
+  // 陣列: [s3, s1, s2, s3, s1, s2] (indices 0-5)
+  // centerIdx=1 起始 (s1); 每次+1 走到 4 (=s1 副本, 視覺同 1) 後瞬間跳回 1
+  // 每張卡片依 (idx - centerIdx) 的距離套用不同 transform: 中央大而正, 側邊縮小旋轉, 更遠淡出
+  const slidesEls = document.querySelectorAll('.slide');
+  const dotsEls   = document.querySelectorAll('.dot');
+  const START     = 1;
+  const WRAP_END  = 4;
+  const N_UNIQUE  = 3;
+  const HOLD_MS   = 3000;
+  const TRANS_MS  = 600;
+  let centerIdx = START;
+
+  function slideWidth() {
+    return slidesEls[0].getBoundingClientRect().width || 400;
+  }
+  function updateSlides(withTransition) {
+    const w = slideWidth();
+    const GAP  = 16;              // 依 Figma spec, 圖與圖之間 16px
+    const step = w + GAP;         // 相鄰 slide 中心的距離
+
+    if (!withTransition) {
+      slidesEls.forEach(s => s.style.transition = 'none');
+      // 強制 reflow 讓 transition:none 生效
+      void document.querySelector('.slides').offsetHeight;
+    }
+
+    slidesEls.forEach((el, i) => {
+      const d  = i - centerIdx;
+      const tx = d * step;
+      el.style.transform = `translate(calc(-50% + ${tx}px), -50%)`;
+      el.style.zIndex    = d === 0 ? 10 : 5;
+    });
+
+    // 圓點: centerIdx 1→s1(dot 0), 2→s2(dot 1), 3→s3(dot 2), 4→s1(dot 0)
+    const activeDot = (centerIdx - 1) % N_UNIQUE;
+    dotsEls.forEach((d, i) => d.classList.toggle('active', i === activeDot));
+
+    if (!withTransition) {
+      requestAnimationFrame(() => {
+        slidesEls.forEach(s => s.style.transition = '');
+      });
+    }
+  }
+
+  // 首次呈現
+  updateSlides(false);
+  window.addEventListener('resize', () => updateSlides(false));
+
+  function nextSlide() {
+    centerIdx++;
+    updateSlides(true);
+    if (centerIdx >= WRAP_END) {
+      // 過場結束後,瞬間跳回 START (視覺相同, 無縫)
+      setTimeout(() => {
+        centerIdx = START;
+        updateSlides(false);
+      }, TRANS_MS + 20);
+    }
+  }
+  function prevSlide() {
+    centerIdx--;
+    updateSlides(true);
+    if (centerIdx <= 0) {
+      // idx 0 (s3) 視覺同 idx 3 (s3), 過場後瞬間跳到 idx 3 讓上一張可繼續往前走
+      setTimeout(() => {
+        centerIdx = WRAP_END - 1;
+        updateSlides(false);
+      }, TRANS_MS + 20);
+    }
+  }
+  let autoTimer = setInterval(nextSlide, HOLD_MS + TRANS_MS);
+  function resetAutoTimer() {
+    clearInterval(autoTimer);
+    autoTimer = setInterval(nextSlide, HOLD_MS + TRANS_MS);
+  }
+
+  document.querySelector('.arrow.prev').addEventListener('click', (e) => {
+    e.stopPropagation();
+    prevSlide();
+    resetAutoTimer();
+  });
+  document.querySelector('.arrow.next').addEventListener('click', (e) => {
+    e.stopPropagation();
+    nextSlide();
+    resetAutoTimer();
+  });
+
+  // 啟動
+  startAttract();
+
+  // 除錯用 hash：#count 或 #cut2 直接切狀態
+  const hash = location.hash.slice(1);
+  if (hash === 'count') { onUserEngage(); }
+  if (hash === 'cut2')  { userEngaged = true; clearAttract(); goCut2(); }
+})();
+</script>
+</body>
+</html>
