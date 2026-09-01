@@ -940,13 +940,13 @@
       `
     },
     c: {
-      title: '方案 C：滑入即展開 → 關閉後降級為 A 模式',
+      title: '方案 C：滑入即展開 → 關閉後降級（熱區即展開）',
       body: `
-        <div class="rule"><b>初次進入</b>：整個廣告區都是感應範圍，滑入立即展開 cut 2</div>
-        <div class="rule">點 ✕ 關閉後 → 感應區降級為左右熱區（同 A）</div>
+        <div class="rule"><b>初次進入</b>：整個廣告區都是感應範圍，滑入<b>立即</b>展開 cut 2</div>
+        <div class="rule">點 ✕ 關閉後 → 感應區降級為左右熱區（video-left / image-right）</div>
         <div class="rule">中央輪播從此變成保護區，可以自由點擊 slide</div>
-        <div class="rule">熱區 hover → 3 秒倒數 → 再次展開</div>
-        <div class="rule">產品邏輯：先強制曝光一次，之後尊重使用者互動</div>
+        <div class="rule">熱區 hover → <b>立即</b>再次展開（無倒數，一致的即時感）</div>
+        <div class="rule">產品邏輯：全流程都是「快、直接」，用降級保護輪播互動</div>
       `
     }
   };
@@ -1080,13 +1080,14 @@
     expanded = false;
     hudState.textContent = 'collapsed';
     hudState.className = 'v';
-    // Mode C: restore top hint + switch to restricted (A-like) mode
+    // Mode C: restore top hint + switch to restricted (hot-zone immediate) mode
     if (mode === 'c') {
       topHint.classList.remove('hidden');
       attentionCursor.classList.remove('hidden');
       cRestricted = true;
+      armedForC = true;   // re-arm so next hot-zone entry triggers
       stage.classList.add('geofence-active');
-      showToast('已切換：熱區才觸發（同 A 模式）');
+      showToast('已切換：熱區立即展開');
     }
     // Mode B: same restricted degrade after first cut2 close
     if (mode === 'b') {
@@ -1150,18 +1151,20 @@
           expand('滑入立即展開', { silent: true });
         }
       } else {
-        // After cut2 close: behave like A (hot zones only + countdown tooltip)
+        // After cut2 close: hot zones only, IMMEDIATE expand (no countdown).
+        // Re-arm gate: must leave hot zone before it can trigger again.
         const inVL = inNode(e, videoLeft);
         const inIR = inNode(e, imageRight);
         const inHot = inVL || inIR;
-        if (inHot) {
-          if (!expandStart) startCountdown();
-          showTooltip(stagePt.x, stagePt.y - 60);
-          topHint.classList.add('hidden');
-        attentionCursor.classList.add('hidden');
-        } else {
+        if (!inHot) {
+          armedForC = true;
           cancelCountdown();
           hideTooltip();
+        } else if (armedForC) {
+          armedForC = false;
+          topHint.classList.add('hidden');
+          attentionCursor.classList.add('hidden');
+          expand('熱區立即展開', { silent: true });
         }
       }
     } else if (mode === 'b') {
