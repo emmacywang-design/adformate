@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneAD 桌機置底 Plus · UX Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    font-family: -apple-system, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    color: #595757;
+    background: #333;
+    overflow: hidden;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- Mode bar ---------- */
+  .mode-bar {
+    background: #fff;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    z-index: 400;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    height: 56px;
+  }
+  .mode-bar h1 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #595757;
+    margin-right: 12px;
+    letter-spacing: .5px;
+  }
+  .mode-bar h1 .brand { color: #ff006e; }
+  .mode-btn {
+    padding: 8px 14px;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #595757;
+    transition: all .18s;
+    font-family: inherit;
+  }
+  .mode-btn:hover { border-color: #595757; }
+  .mode-btn.active {
+    background: #595757;
+    color: #fff;
+    border-color: #595757;
+  }
+  .reset-btn {
+    margin-left: auto;
+    padding: 8px 14px;
+    border: 1px solid #ccc;
+    background: #f5f5f5;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #595757;
+    font-family: inherit;
+  }
+  .reset-btn:hover { background: #ececec; }
+  .toggle-panels {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #888;
+    font-family: inherit;
+  }
+  .toggle-panels.on { color: #ff006e; border-color: #ff006e; }
+  .show-panels .hud,
+  .show-panels .explain { display: block; }
+  .show-panels .hud { display: block; }
+  .show-panels .explain { display: block; }
+
+  /* ---------- Stage container (holds scaled 1920x1080) ---------- */
+  .stage-frame {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    transform-origin: center center;
+    background: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 0 40px rgba(0,0,0,.5);
+  }
+
+  /* ---------- Page background (fake News.com) ---------- */
+  .page-bg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1920px;
+    height: 1003px;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* ---------- Ad bar ---------- */
+  .ad-bar {
+    position: absolute;
+    left: 0;
+    top: 780px;
+    width: 1920px;
+    height: 300px;
+    z-index: 10;
+  }
+  .bg-bar {
+    position: absolute;
+    left: 0;
+    top: 1px;   /* bg-bar starts at 781 = ad-bar top +1 */
+    width: 1920px;
+    height: 300px;
+    background: #000;
+    box-shadow: 0 -2px 8px rgba(0,0,0,.25);
+  }
+
+  /* Video-left area (empty in cut1, becomes fullscreen anchor) */
+  .video-left {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 534px;
+    height: 300px;
+    background: #000;
+    z-index: 3;
+    overflow: hidden;
+  }
+  /* Add a subtle "video will play here" hint */
+  .video-left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 30% 50%, rgba(74,144,226,.15), transparent 60%),
+      linear-gradient(135deg, #0a0a0a, #1a1a2e);
+  }
+  .video-left::after {
+    content: '▶ VIDEO';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255,255,255,.2);
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 4px;
+  }
+
+  /* Image-right */
+  .image-right {
+    position: absolute;
+    left: 1386px;
+    top: 0;
+    width: 534px;
+    height: 300px;
+    z-index: 3;
+    overflow: hidden;
+  }
+  .image-right img {
+    position: absolute;
+    height: 100%;
+    left: -43.11%;
+    top: 0;
+    width: 155.57%;
+    max-width: none;
+    object-fit: cover;
+  }
+
+  /* Carousel (middle 3 slides) */
+  .carousel {
+    position: absolute;
+    left: 224px;
+    top: 16px;   /* 796 - 780 = 16 */
+    width: 1472px;
+    height: 270px;
+    overflow: hidden;
+    z-index: 2;
+    transition: box-shadow .3s, outline .3s;
+  }
+  .slides {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform .5s cubic-bezier(.25,.8,.25,1);
+  }
+  .slide {
+    position: absolute;
+    top: 0;
+    width: 480px;
+    height: 270px;
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .slide:nth-child(1) { left: 0; }
+  .slide:nth-child(2) { left: 496px; }
+  .slide:nth-child(3) { left: 992px; }
+  .slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    display: block;
+  }
+  .slide-2 img {
+    position: absolute;
+    height: 100%;
+    left: -35.85%;
+    top: 0.06%;
+    width: 155.77%;
+    max-width: none;
+  }
+
+  /* Nav buttons */
+  .nav-btn {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    top: 111px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 5;
+  }
+  .nav-btn.prev { left: 350px; }
+  .nav-btn.next { left: 1074px; }
+  .nav-btn img { width: 48px; height: 48px; display: block; }
+  .nav-btn.prev img { transform: scaleX(-1); }
+
+  /* Count circle */
+  .count-circle {
+    position: absolute;
+    left: 696px;
+    top: 95px;
+    width: 80px;
+    height: 80px;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .count-circle .circle-bg {
+    position: absolute;
+    inset: 0;
+    width: 80px;
+    height: 80px;
+  }
+  .count-circle .num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-family: Roboto, -apple-system, sans-serif;
+    font-size: 64px;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  /* Close & logo */
+  .ad-close {
+    position: absolute;
+    left: 24px;
+    top: -32px;  /* 748 - 780 */
+    width: 24px;
+    height: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 6;
+  }
+  .ad-close img { width: 24px; height: 24px; display: block; }
+  .onead-logo {
+    position: absolute;
+    left: 1888px;
+    top: 268px;   /* 1048 - 780 */
+    width: 32px;
+    height: 32px;
+    z-index: 6;
+  }
+  .onead-logo img { width: 32px; height: 32px; display: block; }
+
+  /* ---------- Persistent top hint (both modes) ---------- */
+  .top-hint {
+    position: absolute;
+    left: 50%;
+    top: -68px;  /* sits above the ad-bar */
+    transform: translateX(-50%);
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,.3));
+    animation: hintBob 2.2s ease-in-out infinite;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity .3s ease;
+  }
+  .top-hint.hidden {
+    opacity: 0;
+  }
+  @keyframes hintBob {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-6px); }
+  }
+  .top-hint .body {
+    background: #333;
+    border: 1px solid #333;
+    padding: 10px 20px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .top-hint .icon {
+    font-size: 22px;
+  }
+  .top-hint .txt {
+    color: #fff;
+    font-family: Roboto, -apple-system, "Noto Sans TC", sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 30px;
+    white-space: nowrap;
+    letter-spacing: 1px;
+  }
+  .top-hint .arrow {
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 12px solid #333;
+    margin-top: -1px;
+  }
+
+  /* ---------- Hover tooltip ---------- */
+  .hover-tooltip {
+    position: absolute;
+    pointer-events: none;
+    z-index: 300;
+    opacity: 0;
+    transition: opacity .18s;
+    transform: translate(-50%, 20px);
+  }
+  .hover-tooltip.show { opacity: 1; }
+  .hover-tooltip .body {
+    background: #333;
+    border: 1px solid #333;
+    padding: 8px 12px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.15));
+    min-width: 142px;
+    justify-content: center;
+  }
+  .hover-tooltip .txt {
+    color: #fff;
+    font-family: Roboto, -apple-system, sans-serif;
+    font-size: 22px;
+    line-height: 30px;
+    white-space: nowrap;
+  }
+  .hover-tooltip .arrow {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid #333;
+  }
+  .hover-tooltip .cd-ring {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: conic-gradient(#4ade80 var(--progress, 0deg), rgba(255,255,255,.15) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .hover-tooltip .cd-ring::before {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #333;
+  }
+  .hover-tooltip .cd-num {
+    position: relative;
+    z-index: 1;
+    font-size: 14px;
+    font-weight: 700;
+    color: #4ade80;
+    font-family: Roboto, sans-serif;
+  }
+
+  /* ---------- CTA (Mode C after preview) ---------- */
+  .expand-cta {
+    position: absolute;
+    z-index: 300;
+    background: linear-gradient(135deg, #ff006e, #8338ec);
+    color: #fff;
+    padding: 14px 22px;
+    border-radius: 32px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 6px 20px rgba(255,0,110,.45), 0 0 0 3px rgba(255,255,255,.9);
+    transform: translate(-50%, -50%) scale(.85);
+    opacity: 0;
+    transition: opacity .3s, transform .3s cubic-bezier(.34,1.56,.64,1);
+    border: none;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .expand-cta.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .expand-cta:hover { filter: brightness(1.08); }
+
+  /* ---------- Fullscreen video (cut2) ---------- */
+  .fullscreen-video {
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .5s;
+    overflow: hidden;
+  }
+  .fullscreen-video.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .fake-video-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #1a1a2e, #0f3460 40%, #16213e);
+    background-size: 400% 400%;
+    animation: videoGradient 10s ease infinite;
+  }
+  @keyframes videoGradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .fake-video-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(120,180,255,.2), transparent 45%),
+      radial-gradient(circle at 70% 60%, rgba(255,120,180,.15), transparent 45%);
+    animation: videoFloat 6s ease-in-out infinite;
+  }
+  @keyframes videoFloat {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.15) rotate(3deg); }
+  }
+  .video-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+  .video-title {
+    font-size: 120px;
+    font-weight: 900;
+    letter-spacing: 8px;
+    background: linear-gradient(90deg, #fff, #a5b4fc);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+  }
+  .video-sub {
+    font-size: 28px;
+    color: rgba(255,255,255,.7);
+    margin-top: 24px;
+    letter-spacing: 4px;
+  }
+  .video-brand {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 2px;
+  }
+  .video-brand .brand { color: #ff006e; }
+  .fs-close {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(0,0,0,.6);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,.3);
+    cursor: pointer;
+    font-size: 24px;
+    z-index: 2;
+    font-family: inherit;
+  }
+  .fs-close:hover { background: rgba(0,0,0,.9); }
+
+  /* Preview banner during mode C forced preview */
+  .preview-banner {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,.7);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 32px;
+    font-size: 18px;
+    font-weight: 600;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    backdrop-filter: blur(10px);
+  }
+  .preview-banner .cd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ff006e;
+    color: #fff;
+    font-weight: 800;
+    font-family: Roboto, sans-serif;
+  }
+
+  /* ---------- Hot-zone visual (Mode A+D1) ---------- */
+  .geofence-active .video-left,
+  .geofence-active .image-right {
+    outline: 3px dashed rgba(251, 191, 36, .9);
+    outline-offset: -3px;
+    animation: hotzonePulse 2s ease-in-out infinite;
+  }
+  @keyframes hotzonePulse {
+    0%, 100% { outline-color: rgba(251,191,36,.6); }
+    50%      { outline-color: rgba(251,191,36,1); }
+  }
+  .hot-label {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: #fbbf24;
+    color: #451a03;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 10px;
+    z-index: 5;
+    letter-spacing: 1px;
+    display: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    pointer-events: none;
+  }
+  .hot-label { display: none !important; }
+  .geofence-label { display: none; } /* legacy, keep hidden */
+
+  /* ---------- Debug HUD ---------- */
+  .hud {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0,0,0,.88);
+    color: #4ade80;
+    font-family: 'SF Mono', 'Menlo', Monaco, monospace;
+    font-size: 12px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    z-index: 900;
+    min-width: 230px;
+    line-height: 1.9;
+    box-shadow: 0 4px 20px rgba(0,0,0,.3);
+  }
+  .hud-title {
+    color: #fff;
+    font-weight: 700;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 4px;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .hud .k { color: #94a3b8; display: inline-block; min-width: 70px; }
+  .hud .v { color: #4ade80; }
+  .hud .v.active { color: #fbbf24; }
+  .hud .v.trigger { color: #f87171; font-weight: 700; }
+
+  /* ---------- Explanation panel ---------- */
+  .explain {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(255,255,255,.98);
+    padding: 16px 20px;
+    border-radius: 12px;
+    max-width: 360px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.15);
+    z-index: 900;
+    font-size: 13px;
+    line-height: 1.7;
+    border-left: 4px solid #ff006e;
+  }
+  .explain h3 {
+    font-size: 15px;
+    margin-bottom: 8px;
+    color: #595757;
+    font-weight: 700;
+  }
+  .explain .rule {
+    color: #666;
+    font-size: 12.5px;
+    padding-left: 18px;
+    position: relative;
+    margin-top: 4px;
+  }
+  .explain .rule::before {
+    content: '→';
+    color: #ff006e;
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: #4ade80;
+    color: #052e16;
+    padding: 10px 20px;
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 700;
+    z-index: 999;
+    opacity: 0;
+    transition: all .3s;
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(74,222,128,.4);
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<div class="mode-bar">
+  <h1><span class="brand">OneAD</span> 桌機置底 Plus · UX Demo</h1>
+  <button class="mode-btn active" data-mode="ad1">方案 A+D1（幾何切割 + 視覺化倒數）</button>
+  <button class="mode-btn" data-mode="c">方案 C（時序錯開）</button>
+  <button class="reset-btn" id="resetBtn">↻ 重播</button>
+  <button class="toggle-panels" id="togglePanels" title="顯示/隱藏說明與除錯面板">ⓘ 說明</button>
+</div>
+
+<div class="stage-frame">
+  <div class="stage" id="stage">
+
+    <!-- Page background (News.com fake page) -->
+    <img class="page-bg" src="assets/page-bg.png" alt="page">
+
+    <!-- Ad bar -->
+    <div class="ad-bar" id="adBar">
+      <!-- Persistent top hint (always visible in both modes) -->
+      <div class="top-hint" id="topHint">
+        <div class="body">
+          <span class="icon">👆</span>
+          <span class="txt">滑入看更多</span>
+        </div>
+        <div class="arrow"></div>
+      </div>
+      <div class="bg-bar"></div>
+
+      <!-- Carousel (behind side art) -->
+      <div class="carousel" id="carousel">
+        <div class="geofence-label">🛡️ 互動保護區 · 不觸發展開</div>
+        <div class="slides" id="slides">
+          <div class="slide slide-1" data-slide="1">
+            <img src="assets/slide-1.png" alt="slide-1">
+          </div>
+          <div class="slide slide-2" data-slide="2">
+            <img src="assets/slide-2.png" alt="slide-2">
+          </div>
+          <div class="slide slide-3" data-slide="3">
+            <img src="assets/slide-3.png" alt="slide-3">
+          </div>
+        </div>
+        <button class="nav-btn prev" id="prevBtn" aria-label="prev">
+          <img src="assets/ic-prev.svg" alt="prev">
+        </button>
+        <button class="nav-btn next" id="nextBtn" aria-label="next">
+          <img src="assets/ic-next.svg" alt="next">
+        </button>
+      </div>
+
+      <!-- Video-left (empty in cut1) -->
+      <div class="video-left" id="videoLeft">
+        <div class="hot-label">🔥 熱區</div>
+      </div>
+
+      <!-- Image-right (Toyota mountain) -->
+      <div class="image-right" id="imageRight">
+        <img src="assets/image-right.png" alt="image-right">
+        <div class="hot-label">🔥 熱區</div>
+      </div>
+
+      <!-- Close button -->
+      <button class="ad-close" aria-label="close">
+        <img src="assets/ic-close.svg" alt="close">
+      </button>
+
+      <!-- OneAD logo -->
+      <div class="onead-logo">
+        <div style="width:32px;height:32px;background:#fff;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#ff006e;letter-spacing:.5px;">OneAD</div>
+      </div>
+    </div>
+
+    <!-- Hover tooltip (both modes) -->
+    <div class="hover-tooltip" id="tooltip">
+      <div class="body">
+        <span class="txt" id="tipText">倒數展開</span>
+        <div class="cd-ring" id="cdRing"><span class="cd-num" id="cdNum">3</span></div>
+      </div>
+      <div class="arrow"></div>
+    </div>
+
+    <!-- CTA button (Mode C after preview) -->
+    <button class="expand-cta" id="ctaBtn">▶ 觀看完整影片</button>
+
+    <!-- Fullscreen video overlay -->
+    <div class="fullscreen-video" id="fsVideo">
+      <div class="fake-video-bg"></div>
+      <div class="video-content">
+        <div class="video-title">TOYOTA HILUX</div>
+        <div class="video-sub">悍動全域 · 剽悍登場</div>
+      </div>
+      <div class="video-brand"><span class="brand">▶</span> OneAD Video</div>
+      <div class="preview-banner" id="previewBanner" style="display:none;">
+        <span>強制預覽</span>
+        <span class="cd" id="previewCd">3</span>
+        <span>秒後自動收合</span>
+      </div>
+      <button class="fs-close" id="fsClose">✕</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Debug HUD -->
+<div class="hud">
+  <div class="hud-title">DEBUG HUD</div>
+  <div><span class="k">Mode</span> <span class="v" id="hudMode">A+D1</span></div>
+  <div><span class="k">Cursor</span> <span class="v" id="hudCursor">outside</span></div>
+  <div><span class="k">Timer</span> <span class="v" id="hudTimer">idle</span></div>
+  <div><span class="k">State</span> <span class="v" id="hudState">collapsed</span></div>
+</div>
+
+<!-- Explanation panel -->
+<div class="explain">
+  <h3 id="explainTitle">方案 A+D1：幾何切割 + 視覺化倒數</h3>
+  <div id="explainBody"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  const $ = (id) => document.getElementById(id);
+  const stage = $('stage');
+  const adBar = $('adBar');
+  const carousel = $('carousel');
+  const videoLeft = $('videoLeft');
+  const imageRight = $('imageRight');
+  const slides = $('slides');
+  const tooltip = $('tooltip');
+  const tipText = $('tipText');
+  const cdRing = $('cdRing');
+  const cdNum = $('cdNum');
+  const ctaBtn = $('ctaBtn');
+  const fsVideo = $('fsVideo');
+  const fsClose = $('fsClose');
+  const previewBanner = $('previewBanner');
+  const previewCd = $('previewCd');
+  const topHint = $('topHint');
+  const prevBtn = $('prevBtn');
+  const nextBtn = $('nextBtn');
+  const resetBtn = $('resetBtn');
+  const hudMode = $('hudMode');
+  const hudCursor = $('hudCursor');
+  const hudTimer = $('hudTimer');
+  const hudState = $('hudState');
+  const explainTitle = $('explainTitle');
+  const explainBody = $('explainBody');
+  const toastEl = $('toast');
+
+  let mode = 'ad1';
+  let expandStart = null;
+  let animFrame = null;
+  let expanded = false;
+  let scale = 1;
+  let armedForC = true; // Mode C re-entry gate: must leave ad before re-triggering
+  let cRestricted = false; // Mode C: after first close of cut 2, behave like A
+  const HOVER_DURATION = 3000;
+  const PREVIEW_DURATION = 3000;
+
+  const explains = {
+    ad1: {
+      title: '方案 A+D1：熱區觸發 + 視覺化倒數',
+      body: `
+        <div class="rule">感應熱區 = 左側 video 區 + 右側 image 區（黃色虛線標示）</div>
+        <div class="rule">中央輪播完全不觸發，使用者可以自由點擊 slide</div>
+        <div class="rule">Hover 熱區 → 滑鼠旁 tooltip 顯示「倒數展開 3」</div>
+        <div class="rule">滑出熱區 → 倒數立刻取消 + tooltip 消失</div>
+      `
+    },
+    c: {
+      title: '方案 C：滑入即展開 → 關閉後降級為 A 模式',
+      body: `
+        <div class="rule"><b>初次進入</b>：整個廣告區都是感應範圍，滑入立即展開 cut 2</div>
+        <div class="rule">點 ✕ 關閉後 → 感應區降級為左右熱區（同 A）</div>
+        <div class="rule">中央輪播從此變成保護區，可以自由點擊 slide</div>
+        <div class="rule">熱區 hover → 3 秒倒數 → 再次展開</div>
+        <div class="rule">產品邏輯：先強制曝光一次，之後尊重使用者互動</div>
+      `
+    }
+  };
+
+  /* ---------- Scale stage to fit viewport ---------- */
+  function updateScale() {
+    const availW = window.innerWidth - 40;
+    const availH = window.innerHeight - 76;
+    const scaleX = availW / 1920;
+    const scaleY = availH / 1080;
+    scale = Math.min(scaleX, scaleY, 1);
+    stage.style.transform = `scale(${scale})`;
+  }
+  window.addEventListener('resize', updateScale);
+  updateScale();
+
+  /* ---------- Carousel ---------- */
+  // We'll implement carousel as a "center-focused" model.
+  // Initial: center = index 1 (slide 2). Prev/next shift by 496px.
+  let center = 1; // 0, 1, 2
+  const SLIDE_STEP = 496; // 480 + 16 gap
+  function renderCarousel(animate = true) {
+    const offset = (1 - center) * SLIDE_STEP;
+    slides.style.transition = animate ? 'transform .5s cubic-bezier(.25,.8,.25,1)' : 'none';
+    slides.style.transform = `translateX(${offset}px)`;
+  }
+  function shift(delta) {
+    center = (center + delta + 3) % 3;
+    renderCarousel(true);
+    showToast(`切到 Slide ${center + 1}`);
+  }
+  prevBtn.addEventListener('click', (e) => { e.stopPropagation(); shift(-1); });
+  nextBtn.addEventListener('click', (e) => { e.stopPropagation(); shift(1); });
+  slides.addEventListener('click', (e) => {
+    const slide = e.target.closest('.slide');
+    if (slide) showToast(`✓ 成功點擊 Slide ${slide.dataset.slide}`);
+  });
+  renderCarousel(false);
+
+  /* ---------- Coordinate transform ---------- */
+  function toStageCoords(e) {
+    const rect = stage.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) / scale,
+      y: (e.clientY - rect.top) / scale
+    };
+  }
+  function inNode(e, el) {
+    const rect = el.getBoundingClientRect();
+    return e.clientX >= rect.left && e.clientX <= rect.right
+        && e.clientY >= rect.top && e.clientY <= rect.bottom;
+  }
+
+  /* ---------- Timer helpers ---------- */
+  function startCountdown() {
+    cancelCountdown();
+    expandStart = performance.now();
+    hudTimer.textContent = '⏱ counting';
+    hudTimer.className = 'v active';
+    tick();
+  }
+  function tick() {
+    const elapsed = performance.now() - expandStart;
+    const remain = Math.max(0, HOVER_DURATION - elapsed);
+    const progress = Math.min(360, (elapsed / HOVER_DURATION) * 360);
+    cdRing.style.setProperty('--progress', progress + 'deg');
+    cdNum.textContent = Math.ceil(remain / 1000);
+    if (elapsed < HOVER_DURATION) {
+      animFrame = requestAnimationFrame(tick);
+    } else {
+      expand('倒數觸發');
+    }
+  }
+  function cancelCountdown() {
+    if (animFrame) cancelAnimationFrame(animFrame);
+    animFrame = null;
+    expandStart = null;
+    cdRing.style.setProperty('--progress', '0deg');
+    cdNum.textContent = '3';
+    hudTimer.textContent = 'idle';
+    hudTimer.className = 'v';
+  }
+
+  function showTooltip(x, y) {
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+    tooltip.classList.add('show');
+  }
+  function hideTooltip() { tooltip.classList.remove('show'); }
+  function showCTA(x, y) {
+    ctaBtn.style.left = x + 'px';
+    ctaBtn.style.top = y + 'px';
+    ctaBtn.classList.add('show');
+  }
+  function hideCTA() { ctaBtn.classList.remove('show'); }
+
+  /* ---------- Expand / collapse ---------- */
+  function expand(reason, options) {
+    options = options || {};
+    cancelCountdown();
+    hideTooltip();
+    hideCTA();
+    fsVideo.classList.add('active');
+    expanded = true;
+    hudState.textContent = `expanded (${reason})`;
+    hudState.className = 'v trigger';
+    if (!options.silent) showToast(`▶ 影片展開（${reason}）`);
+  }
+  function collapse(silent) {
+    fsVideo.classList.remove('active');
+    expanded = false;
+    hudState.textContent = 'collapsed';
+    hudState.className = 'v';
+    // Mode C: restore top hint + switch to restricted (A-like) mode
+    if (mode === 'c') {
+      topHint.classList.remove('hidden');
+      cRestricted = true;
+      stage.classList.add('geofence-active'); // show hot-zone borders
+      showToast('已切換：熱區才觸發（同 A 模式）');
+    }
+    if (!silent) showToast('✕ 已收合');
+  }
+
+  fsClose.addEventListener('click', () => collapse());
+  ctaBtn.addEventListener('click', (e) => { e.stopPropagation(); expand('點擊 CTA'); });
+
+  /* ---------- Toast ---------- */
+  let toastTimer = null;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1600);
+  }
+
+  /* ---------- Mouse dispatcher ---------- */
+  document.addEventListener('mousemove', (e) => {
+    if (expanded) return;
+
+    const inAd = inNode(e, adBar);
+    const inCar = inNode(e, carousel);
+    const stagePt = toStageCoords(e);
+
+    hudCursor.textContent = !inAd ? 'outside' : (inCar ? 'in carousel 🛡️' : 'in ad edge');
+    hudCursor.className = 'v' + (inAd ? ' active' : '');
+
+    if (mode === 'ad1') {
+      // A+D1: hot zones = video-left + image-right ONLY.
+      // Carousel middle stays protected.
+      const inVL = inNode(e, videoLeft);
+      const inIR = inNode(e, imageRight);
+      const inHot = inVL || inIR;
+      if (inHot) {
+        if (!expandStart) startCountdown();
+        showTooltip(stagePt.x, stagePt.y - 60);
+        topHint.classList.add('hidden');
+      } else {
+        cancelCountdown();
+        hideTooltip();
+      }
+    } else if (mode === 'c') {
+      if (!cRestricted) {
+        // First-time behaviour: whole ad hot; immediate expand
+        if (!inAd) {
+          armedForC = true;
+        } else if (armedForC) {
+          armedForC = false;
+          topHint.classList.add('hidden');
+          expand('滑入立即展開', { silent: true });
+        }
+      } else {
+        // After cut2 close: behave like A (hot zones only + countdown tooltip)
+        const inVL = inNode(e, videoLeft);
+        const inIR = inNode(e, imageRight);
+        const inHot = inVL || inIR;
+        if (inHot) {
+          if (!expandStart) startCountdown();
+          showTooltip(stagePt.x, stagePt.y - 60);
+          topHint.classList.add('hidden');
+        } else {
+          cancelCountdown();
+          hideTooltip();
+        }
+      }
+    }
+  });
+
+  /* ---------- Mode switching ---------- */
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      mode = btn.dataset.mode;
+      resetDemo();
+    });
+  });
+
+  function resetDemo() {
+    cancelCountdown();
+    hideTooltip();
+    hideCTA();
+    collapse(true);
+    // Only A+D1 has geofence protection; C covers the whole ad
+    stage.classList.toggle('geofence-active', mode === 'ad1');
+    // Reset top hint to visible on mode switch / reset
+    topHint.classList.remove('hidden');
+    // Reset C re-entry gate & restricted state
+    armedForC = true;
+    cRestricted = false;
+    hudMode.textContent = mode === 'ad1' ? 'A+D1' : 'C';
+    explainTitle.textContent = explains[mode].title;
+    explainBody.innerHTML = explains[mode].body;
+    previewBanner.style.display = 'none';
+  }
+
+  resetBtn.addEventListener('click', () => {
+    showToast('已重播');
+    resetDemo();
+  });
+
+  const togglePanels = $('togglePanels');
+  togglePanels.addEventListener('click', () => {
+    document.body.classList.toggle('show-panels');
+    togglePanels.classList.toggle('on');
+  });
+
+  // Init
+  resetDemo();
+})();
+</script>
+</body>
+</html>
