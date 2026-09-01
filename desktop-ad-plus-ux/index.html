@@ -352,25 +352,25 @@
     margin-top: -1px;
   }
 
-  /* ---------- Attention-grabbing cursor (bounces above 滑入看更多) ---------- */
+  /* ---------- Attention-grabbing cursor (dives from outside INTO the ad) ---------- */
   .attention-cursor {
     position: absolute;
     left: 50%;
-    top: -180px;   /* above the top-hint (which sits at -68px) */
+    top: -160px;   /* start anchor above the ad */
     width: 56px;
     height: 56px;
-    z-index: 25;   /* above top-hint (15) so its motion is visually on top */
+    z-index: 25;
     pointer-events: none;
     filter: drop-shadow(0 3px 6px rgba(0,0,0,.5));
     transform: translateX(-50%);
-    animation: cursorBounce 1.4s cubic-bezier(.55,.06,.42,.98) infinite;
+    animation: cursorDive 1.8s cubic-bezier(.55,.06,.42,.98) infinite;
     transition: opacity .3s ease;
     opacity: 1;
   }
   .attention-cursor.hidden { opacity: 0; }
-  @keyframes cursorBounce {
+  @keyframes cursorDive {
     0%, 100% { transform: translateX(-50%) translateY(-40px); }
-    50%      { transform: translateX(-50%) translateY(60px); }
+    50%      { transform: translateX(-50%) translateY(260px); }
   }
 
   /* ---------- Hover tooltip ---------- */
