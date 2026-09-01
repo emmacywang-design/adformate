@@ -369,8 +369,8 @@
   }
   .attention-cursor.hidden { opacity: 0; }
   @keyframes cursorDive {
-    0%, 100% { transform: translateX(-50%) translateY(-100px); }
-    50%      { transform: translateX(-50%) translateY(100px); }
+    0%, 100% { transform: translateX(-50%) translateY(-100px); }  /* upper part of ad */
+    50%      { transform: translateX(-50%) translateY(100px); }   /* lower part of ad */
   }
 
   /* ---------- Hover tooltip ---------- */
@@ -469,25 +469,59 @@
   }
   .expand-cta:hover { filter: brightness(1.08); }
 
-  /* ---------- Fullscreen video (cut2) ---------- */
+  /* ---------- Fullscreen video (cut2) — height-based so we can do half state ---------- */
   .fullscreen-video {
     position: absolute;
-    inset: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 0;
     z-index: 200;
     background: #000;
     opacity: 0;
     pointer-events: none;
-    transform: translateY(100%);
-    transition: transform .55s cubic-bezier(.22, 1, .36, 1),
-                opacity .35s ease;
     overflow: hidden;
-    will-change: transform;
+    transition: height .55s cubic-bezier(.22, 1, .36, 1),
+                opacity .35s ease;
+    will-change: height;
   }
-  .fullscreen-video.active {
+  .fullscreen-video.active,
+  .fullscreen-video.half-expanded {
     opacity: 1;
     pointer-events: auto;
-    transform: translateY(0);
   }
+  .fullscreen-video.half-expanded { height: 50%; }
+  .fullscreen-video.active { height: 100%; }
+
+  /* "Expand full" CTA that appears in half-expanded state (Mode B) */
+  .expand-full-btn {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ff006e, #8338ec);
+    color: #fff;
+    padding: 16px 32px;
+    border-radius: 32px;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: 800;
+    z-index: 210;
+    box-shadow: 0 6px 20px rgba(255,0,110,.5), 0 0 0 3px rgba(255,255,255,.9);
+    font-family: inherit;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 1px;
+    animation: fullBtnBob 2s ease-in-out infinite;
+  }
+  .fullscreen-video.half-expanded .expand-full-btn { display: inline-flex; }
+  @keyframes fullBtnBob {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50%      { transform: translateX(-50%) scale(1.05); }
+  }
+  .expand-full-btn:hover { filter: brightness(1.1); }
   .fake-video-bg {
     position: absolute;
     inset: 0;
@@ -722,7 +756,8 @@
 <div class="mode-bar">
   <h1><span class="brand">OneAD</span> 桌機置底 Plus · UX Demo</h1>
   <button class="mode-btn active" data-mode="ad1">方案 A+D1（幾何切割 + 視覺化倒數）</button>
-  <button class="mode-btn" data-mode="c">方案 C（時序錯開）</button>
+  <button class="mode-btn" data-mode="b">方案 B（半展開 + 按鈕升級）</button>
+  <button class="mode-btn" data-mode="c">方案 C（滑入立即展開）</button>
   <button class="reset-btn" id="resetBtn">↻ 重播</button>
   <button class="toggle-panels" id="togglePanels" title="顯示/隱藏說明與除錯面板">ⓘ 說明</button>
 </div>
@@ -731,7 +766,7 @@
   <div class="stage" id="stage">
 
     <!-- Page background (News.com fake page) -->
-    <img class="page-bg" src="assets/page-bg.png" alt="page">
+    <img class="page-bg" src="https://www.figma.com/api/mcp/asset/01ff35eb-b876-4d64-baf2-9f519dbd0bbd.png" alt="page">
 
     <!-- Ad bar -->
     <div class="ad-bar" id="adBar">
@@ -743,7 +778,7 @@
         <div class="arrow"></div>
       </div>
       <!-- Attention-grabber cursor bouncing above the ad -->
-      <img class="attention-cursor" id="attentionCursor" src="assets/cursor.svg" alt="">
+      <img class="attention-cursor" id="attentionCursor" src="https://www.figma.com/api/mcp/asset/12888de2-9183-479a-8efc-92a84241b314.svg" alt="">
       <div class="bg-bar"></div>
 
       <!-- Carousel (behind side art) -->
@@ -751,20 +786,20 @@
         <div class="geofence-label">🛡️ 互動保護區 · 不觸發展開</div>
         <div class="slides" id="slides">
           <div class="slide slide-1" data-slide="1">
-            <img src="assets/slide-1.png" alt="slide-1">
+            <img src="https://www.figma.com/api/mcp/asset/5a3908f9-2400-4f62-8dad-30854e4a7572.png" alt="slide-1">
           </div>
           <div class="slide slide-2" data-slide="2">
-            <img src="assets/slide-2.png" alt="slide-2">
+            <img src="https://www.figma.com/api/mcp/asset/b4e60680-66b2-4f58-b4e5-ecb337a6b992.png" alt="slide-2">
           </div>
           <div class="slide slide-3" data-slide="3">
-            <img src="assets/slide-3.png" alt="slide-3">
+            <img src="https://www.figma.com/api/mcp/asset/308bb2ed-cb27-452f-bdf4-b0435b941930.png" alt="slide-3">
           </div>
         </div>
         <button class="nav-btn prev" id="prevBtn" aria-label="prev">
-          <img src="assets/ic-prev.svg" alt="prev">
+          <img src="https://www.figma.com/api/mcp/asset/d508cd66-b49a-4369-aedf-feead52a9460.svg" alt="prev">
         </button>
         <button class="nav-btn next" id="nextBtn" aria-label="next">
-          <img src="assets/ic-next.svg" alt="next">
+          <img src="https://www.figma.com/api/mcp/asset/9c202765-46b6-4363-8a80-f30d0539f71c.svg" alt="next">
         </button>
       </div>
 
@@ -775,13 +810,13 @@
 
       <!-- Image-right (Toyota mountain) -->
       <div class="image-right" id="imageRight">
-        <img src="assets/image-right.png" alt="image-right">
+        <img src="https://www.figma.com/api/mcp/asset/d657d75b-68ff-4d3b-a212-0a3813449ac1.png" alt="image-right">
         <div class="hot-label">🔥 熱區</div>
       </div>
 
       <!-- Close button -->
       <button class="ad-close" aria-label="close">
-        <img src="assets/ic-close.svg" alt="close">
+        <img src="https://www.figma.com/api/mcp/asset/e2a7d35d-9420-4bdd-a70c-07ddc489757b.svg" alt="close">
       </button>
 
       <!-- OneAD logo -->
@@ -815,6 +850,7 @@
         <span class="cd" id="previewCd">3</span>
         <span>秒後自動收合</span>
       </div>
+      <button class="expand-full-btn" id="expandFullBtn">▶ 展開完整影片</button>
       <button class="fs-close" id="fsClose">✕</button>
     </div>
 
@@ -855,6 +891,7 @@
   const ctaBtn = $('ctaBtn');
   const fsVideo = $('fsVideo');
   const fsClose = $('fsClose');
+  const expandFullBtn = $('expandFullBtn');
   const previewBanner = $('previewBanner');
   const previewCd = $('previewCd');
   const topHint = $('topHint');
@@ -877,6 +914,8 @@
   let scale = 1;
   let armedForC = true; // Mode C re-entry gate: must leave ad before re-triggering
   let cRestricted = false; // Mode C: after first close of cut 2, behave like A
+  let armedForB = true; // Mode B re-entry gate
+  let bRestricted = false; // Mode B: after first close, hot-zones-only like A
   const HOVER_DURATION = 3000;
   const PREVIEW_DURATION = 3000;
 
@@ -888,6 +927,15 @@
         <div class="rule">中央輪播完全不觸發，使用者可以自由點擊 slide</div>
         <div class="rule">Hover 熱區 → 滑鼠旁 tooltip 顯示「倒數展開 3」</div>
         <div class="rule">滑出熱區 → 倒數立刻取消 + tooltip 消失</div>
+      `
+    },
+    b: {
+      title: '方案 B：漸進式展開（半 → 全 → 熱區降級）',
+      body: `
+        <div class="rule"><b>初次進入</b>：滑入任意處立即<b>半展開</b>（下半螢幕）</div>
+        <div class="rule">半展開顯示粉色「▶ 展開完整影片」按鈕，使用者主動點才變滿版</div>
+        <div class="rule">點 ✕ 關閉 → 降級為左右熱區才觸發（同 A 模式）</div>
+        <div class="rule">產品邏輯：先給預覽誘餌，讓使用者「知情選擇」是否全展開</div>
       `
     },
     c: {
@@ -1000,14 +1048,28 @@
     cancelCountdown();
     hideTooltip();
     hideCTA();
+    fsVideo.classList.remove('half-expanded');
     fsVideo.classList.add('active');
     expanded = true;
     hudState.textContent = `expanded (${reason})`;
     hudState.className = 'v trigger';
     if (!options.silent) showToast(`▶ 影片展開（${reason}）`);
   }
+  function expandHalf(reason, options) {
+    options = options || {};
+    cancelCountdown();
+    hideTooltip();
+    hideCTA();
+    fsVideo.classList.remove('active');
+    fsVideo.classList.add('half-expanded');
+    expanded = true;
+    hudState.textContent = `half (${reason})`;
+    hudState.className = 'v active';
+    if (!options.silent) showToast(`▶ 半展開（${reason}）`);
+  }
   function collapse(silent) {
     fsVideo.classList.remove('active');
+    fsVideo.classList.remove('half-expanded');
     expanded = false;
     hudState.textContent = 'collapsed';
     hudState.className = 'v';
@@ -1016,7 +1078,15 @@
       topHint.classList.remove('hidden');
       attentionCursor.classList.remove('hidden');
       cRestricted = true;
-      stage.classList.add('geofence-active'); // show hot-zone borders
+      stage.classList.add('geofence-active');
+      showToast('已切換：熱區才觸發（同 A 模式）');
+    }
+    // Mode B: same restricted degrade after first cut2 close
+    if (mode === 'b') {
+      topHint.classList.remove('hidden');
+      attentionCursor.classList.remove('hidden');
+      bRestricted = true;
+      stage.classList.add('geofence-active');
       showToast('已切換：熱區才觸發（同 A 模式）');
     }
     if (!silent) showToast('✕ 已收合');
@@ -1024,6 +1094,7 @@
 
   fsClose.addEventListener('click', () => collapse());
   ctaBtn.addEventListener('click', (e) => { e.stopPropagation(); expand('點擊 CTA'); });
+  expandFullBtn.addEventListener('click', (e) => { e.stopPropagation(); expand('點擊展開完整'); });
 
   /* ---------- Toast ---------- */
   let toastTimer = null;
@@ -1086,6 +1157,32 @@
           hideTooltip();
         }
       }
+    } else if (mode === 'b') {
+      if (!bRestricted) {
+        // First-time: whole ad hot; immediate HALF expand
+        if (!inAd) {
+          armedForB = true;
+        } else if (armedForB) {
+          armedForB = false;
+          topHint.classList.add('hidden');
+          attentionCursor.classList.add('hidden');
+          expandHalf('滑入半展開', { silent: true });
+        }
+      } else {
+        // After cut2 close: hot zones + countdown → full expand (like A)
+        const inVL = inNode(e, videoLeft);
+        const inIR = inNode(e, imageRight);
+        const inHot = inVL || inIR;
+        if (inHot) {
+          if (!expandStart) startCountdown();
+          showTooltip(stagePt.x, stagePt.y - 60);
+          topHint.classList.add('hidden');
+          attentionCursor.classList.add('hidden');
+        } else {
+          cancelCountdown();
+          hideTooltip();
+        }
+      }
     }
   });
 
@@ -1104,15 +1201,17 @@
     hideTooltip();
     hideCTA();
     collapse(true);
-    // Only A+D1 has geofence protection; C covers the whole ad
+    // Only A+D1 has geofence protection on entry; B/C start with full-area sensing
     stage.classList.toggle('geofence-active', mode === 'ad1');
     // Reset top hint & attention cursor to visible on mode switch / reset
     topHint.classList.remove('hidden');
     attentionCursor.classList.remove('hidden');
-    // Reset C re-entry gate & restricted state
+    // Reset B & C re-entry gates and restricted state
     armedForC = true;
     cRestricted = false;
-    hudMode.textContent = mode === 'ad1' ? 'A+D1' : 'C';
+    armedForB = true;
+    bRestricted = false;
+    hudMode.textContent = ({ad1: 'A+D1', b: 'B', c: 'C'})[mode];
     explainTitle.textContent = explains[mode].title;
     explainBody.innerHTML = explains[mode].body;
     previewBanner.style.display = 'none';
