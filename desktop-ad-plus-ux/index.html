@@ -334,9 +334,6 @@
     align-items: center;
     gap: 10px;
   }
-  .top-hint .icon {
-    font-size: 22px;
-  }
   .top-hint .txt {
     color: #fff;
     font-family: Roboto, -apple-system, "Noto Sans TC", sans-serif;
@@ -353,6 +350,28 @@
     border-right: 12px solid transparent;
     border-top: 12px solid #333;
     margin-top: -1px;
+  }
+
+  /* ---------- Attention-grabbing cursor (bounces above ad) ---------- */
+  .attention-cursor {
+    position: absolute;
+    left: 50%;
+    top: -140px;
+    width: 48px;
+    height: 48px;
+    z-index: 14;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
+    transform: translateX(-50%);
+    animation: cursorBounce 1.4s cubic-bezier(.55,.06,.42,.98) infinite;
+    transition: opacity .3s ease;
+    opacity: 1;
+  }
+  .attention-cursor.hidden { opacity: 0; }
+  @keyframes cursorBounce {
+    0%    { transform: translateX(-50%) translateY(0); }
+    50%   { transform: translateX(-50%) translateY(72px); }
+    100%  { transform: translateX(-50%) translateY(0); }
   }
 
   /* ---------- Hover tooltip ---------- */
@@ -720,11 +739,12 @@
       <!-- Persistent top hint (always visible in both modes) -->
       <div class="top-hint" id="topHint">
         <div class="body">
-          <span class="icon">👆</span>
           <span class="txt">滑入看更多</span>
         </div>
         <div class="arrow"></div>
       </div>
+      <!-- Attention-grabber cursor bouncing above the ad -->
+      <img class="attention-cursor" id="attentionCursor" src="assets/cursor.svg" alt="">
       <div class="bg-bar"></div>
 
       <!-- Carousel (behind side art) -->
@@ -839,6 +859,7 @@
   const previewBanner = $('previewBanner');
   const previewCd = $('previewCd');
   const topHint = $('topHint');
+  const attentionCursor = $('attentionCursor');
   const prevBtn = $('prevBtn');
   const nextBtn = $('nextBtn');
   const resetBtn = $('resetBtn');
@@ -994,6 +1015,7 @@
     // Mode C: restore top hint + switch to restricted (A-like) mode
     if (mode === 'c') {
       topHint.classList.remove('hidden');
+      attentionCursor.classList.remove('hidden');
       cRestricted = true;
       stage.classList.add('geofence-active'); // show hot-zone borders
       showToast('已切換：熱區才觸發（同 A 模式）');
@@ -1034,6 +1056,7 @@
         if (!expandStart) startCountdown();
         showTooltip(stagePt.x, stagePt.y - 60);
         topHint.classList.add('hidden');
+        attentionCursor.classList.add('hidden');
       } else {
         cancelCountdown();
         hideTooltip();
@@ -1046,6 +1069,7 @@
         } else if (armedForC) {
           armedForC = false;
           topHint.classList.add('hidden');
+        attentionCursor.classList.add('hidden');
           expand('滑入立即展開', { silent: true });
         }
       } else {
@@ -1057,6 +1081,7 @@
           if (!expandStart) startCountdown();
           showTooltip(stagePt.x, stagePt.y - 60);
           topHint.classList.add('hidden');
+        attentionCursor.classList.add('hidden');
         } else {
           cancelCountdown();
           hideTooltip();
@@ -1082,8 +1107,9 @@
     collapse(true);
     // Only A+D1 has geofence protection; C covers the whole ad
     stage.classList.toggle('geofence-active', mode === 'ad1');
-    // Reset top hint to visible on mode switch / reset
+    // Reset top hint & attention cursor to visible on mode switch / reset
     topHint.classList.remove('hidden');
+    attentionCursor.classList.remove('hidden');
     // Reset C re-entry gate & restricted state
     armedForC = true;
     cRestricted = false;
