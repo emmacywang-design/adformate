@@ -930,12 +930,13 @@
       `
     },
     b: {
-      title: '方案 B：漸進式展開（半 → 全 → 熱區降級）',
+      title: '方案 B：漸進式展開（倒數 → 半 → 全 → 熱區降級）',
       body: `
-        <div class="rule"><b>初次進入</b>：滑入任意處立即<b>半展開</b>（下半螢幕）</div>
+        <div class="rule"><b>初次進入</b>：滑入任意處啟動 3 秒倒數 tooltip</div>
+        <div class="rule">倒數結束 → <b>半展開</b>（下半螢幕預覽）</div>
         <div class="rule">半展開顯示粉色「▶ 展開完整影片」按鈕，使用者主動點才變滿版</div>
         <div class="rule">點 ✕ 關閉 → 降級為左右熱區才觸發（同 A 模式）</div>
-        <div class="rule">產品邏輯：先給預覽誘餌，讓使用者「知情選擇」是否全展開</div>
+        <div class="rule">產品邏輯：倒數給緩衝 → 預覽誘餌 → 使用者知情選擇全展開</div>
       `
     },
     c: {
@@ -1016,7 +1017,13 @@
     if (elapsed < HOVER_DURATION) {
       animFrame = requestAnimationFrame(tick);
     } else {
-      expand('倒數觸發');
+      // Mode B first-time: countdown ends in HALF expand.
+      // Everything else: countdown ends in full expand.
+      if (mode === 'b' && !bRestricted) {
+        expandHalf('倒數半展開');
+      } else {
+        expand('倒數觸發');
+      }
     }
   }
   function cancelCountdown() {
@@ -1159,14 +1166,15 @@
       }
     } else if (mode === 'b') {
       if (!bRestricted) {
-        // First-time: whole ad hot; immediate HALF expand
-        if (!inAd) {
-          armedForB = true;
-        } else if (armedForB) {
-          armedForB = false;
+        // First-time: whole ad hot; countdown 3s → HALF expand
+        if (inAd) {
+          if (!expandStart) startCountdown();
+          showTooltip(stagePt.x, stagePt.y - 60);
           topHint.classList.add('hidden');
           attentionCursor.classList.add('hidden');
-          expandHalf('滑入半展開', { silent: true });
+        } else {
+          cancelCountdown();
+          hideTooltip();
         }
       } else {
         // After cut2 close: hot zones + countdown → full expand (like A)
