@@ -199,23 +199,23 @@
     transition: box-shadow .3s, outline .3s;
   }
   .slides {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transition: transform .5s cubic-bezier(.25,.8,.25,1);
-  }
-  .slide {
     position: absolute;
     top: 0;
-    width: 480px;
+    left: 0;
+    height: 100%;
+    display: flex;
+    gap: 16px;
+    transition: transform .5s cubic-bezier(.25,.8,.25,1);
+    will-change: transform;
+  }
+  .slide {
+    position: relative;
+    flex: 0 0 480px;
     height: 270px;
     border-radius: 16px;
     overflow: hidden;
     cursor: pointer;
   }
-  .slide:nth-child(1) { left: 0; }
-  .slide:nth-child(2) { left: 496px; }
-  .slide:nth-child(3) { left: 992px; }
   .slide img {
     width: 100%;
     height: 100%;
@@ -963,28 +963,107 @@
   window.addEventListener('resize', updateScale);
   updateScale();
 
-  /* ---------- Carousel ---------- */
-  // We'll implement carousel as a "center-focused" model.
-  // Initial: center = index 1 (slide 2). Prev/next shift by 496px.
-  let center = 1; // 0, 1, 2
-  const SLIDE_STEP = 496; // 480 + 16 gap
+  /* ---------- Carousel (infinite auto loop) ---------- */
+  // Clone-based infinite loop:
+  //   [clone3] [1] [2] [3] [clone1]  (visible area shows 3 slides at a time)
+  //   When we land on a clone, snap back to the real slide with transition off.
+  const SLIDE_STEP = 496;               // 480 + 16 gap
+  const AUTOPLAY_INTERVAL = 3500;       // ms between auto shifts
+  const RESUME_AFTER_INTERACT = 5000;   // ms to resume autoplay after manual nav
+  const ORIGINAL_COUNT = 3;             // real slides
+  const originalSlides = Array.from(slides.querySelectorAll('.slide'));
+
+  // Prepend clone of last, append clone of first
+  const firstClone = originalSlides[0].cloneNode(true);
+  const lastClone  = originalSlides[ORIGINAL_COUNT - 1].cloneNode(true);
+  firstClone.dataset.clone = 'true';
+  lastClone.dataset.clone  = 'true';
+  slides.appendChild(firstClone);      // after real slide 3
+  slides.insertBefore(lastClone, originalSlides[0]);  // before real slide 1
+
+  // Index in DOM: 0=clone3, 1=real1, 2=real2, 3=real3, 4=clone1
+  // Center = which slide sits in the middle visible column (view has 3 columns).
+  // Initial center = 2 (real slide 2), so real-1 is left, real-3 is right.
+  let center = 2;
+  let autoplayTimer = null;
+  let resumeTimer = null;
+  let isTransitioning = false;
+  let paused = false;   // paused when hovering the ad or when video is expanded
+
   function renderCarousel(animate = true) {
     const offset = (1 - center) * SLIDE_STEP;
     slides.style.transition = animate ? 'transform .5s cubic-bezier(.25,.8,.25,1)' : 'none';
     slides.style.transform = `translateX(${offset}px)`;
   }
-  function shift(delta) {
-    center = (center + delta + 3) % 3;
+
+  function shift(delta, { silent = false, fromUser = false } = {}) {
+    if (isTransitioning) return;
+    isTransitioning = true;
+    center += delta;
     renderCarousel(true);
-    showToast(`切到 Slide ${center + 1}`);
+
+    if (!silent) {
+      // Map DOM center → real slide number (1..3)
+      const realIdx = ((center - 1) % ORIGINAL_COUNT + ORIGINAL_COUNT) % ORIGINAL_COUNT + 1;
+      if (fromUser) showToast(`切到 Slide ${realIdx}`);
+    }
   }
-  prevBtn.addEventListener('click', (e) => { e.stopPropagation(); shift(-1); });
-  nextBtn.addEventListener('click', (e) => { e.stopPropagation(); shift(1); });
+
+  // After the sliding animation ends, snap back if we landed on a clone
+  slides.addEventListener('transitionend', (e) => {
+    if (e.propertyName !== 'transform') return;
+    isTransitioning = false;
+    if (center >= ORIGINAL_COUNT + 1) {
+      // Landed on trailing clone-of-first → jump to real slide 1
+      center = 1;
+      renderCarousel(false);
+    } else if (center <= 0) {
+      // Landed on leading clone-of-last → jump to real slide 3
+      center = ORIGINAL_COUNT;
+      renderCarousel(false);
+    }
+  });
+
+  function startAutoplay() {
+    stopAutoplay();
+    autoplayTimer = setInterval(() => {
+      if (paused || expanded) return;
+      shift(1, { silent: true });
+    }, AUTOPLAY_INTERVAL);
+  }
+  function stopAutoplay() {
+    if (autoplayTimer) { clearInterval(autoplayTimer); autoplayTimer = null; }
+  }
+  function pauseAndResumeLater() {
+    stopAutoplay();
+    if (resumeTimer) clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => startAutoplay(), RESUME_AFTER_INTERACT);
+  }
+
+  prevBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    shift(-1, { fromUser: true });
+    pauseAndResumeLater();
+  });
+  nextBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    shift(1, { fromUser: true });
+    pauseAndResumeLater();
+  });
   slides.addEventListener('click', (e) => {
     const slide = e.target.closest('.slide');
-    if (slide) showToast(`✓ 成功點擊 Slide ${slide.dataset.slide}`);
+    if (slide && !slide.dataset.clone) {
+      showToast(`✓ 成功點擊 Slide ${slide.dataset.slide}`);
+    }
   });
+
+  // Pause autoplay only while hovering the carousel itself (middle area).
+  // Left/right hot zones do NOT pause — autoplay keeps rolling behind the ad expand flow.
+  carousel.addEventListener('mouseenter', () => { paused = true; });
+  carousel.addEventListener('mouseleave', () => { paused = false; });
+
   renderCarousel(false);
+  startAutoplay();
 
   /* ---------- Coordinate transform ---------- */
   function toStageCoords(e) {
