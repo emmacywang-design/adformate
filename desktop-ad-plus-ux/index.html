@@ -619,7 +619,7 @@
     font-family: Roboto, sans-serif;
   }
 
-  /* ---------- Hot-zone visual (Mode A+D1) ---------- */
+  /* ---------- Hot-zone visual (Mode A) ---------- */
   .geofence-active .video-left,
   .geofence-active .image-right {
     outline: 3px dashed rgba(251, 191, 36, .9);
@@ -745,7 +745,7 @@
 
 <div class="mode-bar">
   <h1><span class="brand">OneAD</span> 桌機置底 Plus · UX Demo</h1>
-  <button class="mode-btn active" data-mode="ad1">方案 A+D1（幾何切割 + 視覺化倒數）</button>
+  <button class="mode-btn active" data-mode="ad1">方案 A（幾何切割 + 視覺化倒數）</button>
   <button class="mode-btn" data-mode="b">方案 B（半展開 + 按鈕升級）</button>
   <button class="mode-btn" data-mode="c">方案 C（滑入立即展開）</button>
   <button class="reset-btn" id="resetBtn">↻ 重播</button>
@@ -850,7 +850,7 @@
 <!-- Debug HUD -->
 <div class="hud">
   <div class="hud-title">DEBUG HUD</div>
-  <div><span class="k">Mode</span> <span class="v" id="hudMode">A+D1</span></div>
+  <div><span class="k">Mode</span> <span class="v" id="hudMode">A</span></div>
   <div><span class="k">Cursor</span> <span class="v" id="hudCursor">outside</span></div>
   <div><span class="k">Timer</span> <span class="v" id="hudTimer">idle</span></div>
   <div><span class="k">State</span> <span class="v" id="hudState">collapsed</span></div>
@@ -858,7 +858,7 @@
 
 <!-- Explanation panel -->
 <div class="explain">
-  <h3 id="explainTitle">方案 A+D1：幾何切割 + 視覺化倒數</h3>
+  <h3 id="explainTitle">方案 A：幾何切割 + 視覺化倒數</h3>
   <div id="explainBody"></div>
 </div>
 
@@ -911,7 +911,7 @@
 
   const explains = {
     ad1: {
-      title: '方案 A+D1：熱區觸發 + 視覺化倒數',
+      title: '方案 A：熱區觸發 + 視覺化倒數',
       body: `
         <div class="rule">感應熱區 = 左側 video 區 + 右側 image 區（黃色虛線標示）</div>
         <div class="rule">中央輪播完全不觸發，使用者可以自由點擊 slide</div>
@@ -1194,7 +1194,7 @@
     hudCursor.className = 'v' + (inAd ? ' active' : '');
 
     if (mode === 'ad1') {
-      // A+D1: hot zones = video-left + image-right ONLY.
+      // A: hot zones = video-left + image-right ONLY.
       // Carousel middle stays protected.
       const inVL = inNode(e, videoLeft);
       const inIR = inNode(e, imageRight);
@@ -1281,7 +1281,7 @@
     hideTooltip();
     hideCTA();
     collapse(true);
-    // Only A+D1 has geofence protection on entry; B/C start with full-area sensing
+    // Only A has geofence protection on entry; B/C start with full-area sensing
     stage.classList.toggle('geofence-active', mode === 'ad1');
     // Reset top hint & attention cursor to visible on mode switch / reset
     topHint.classList.remove('hidden');
@@ -1291,7 +1291,7 @@
     cRestricted = false;
     armedForB = true;
     bRestricted = false;
-    hudMode.textContent = ({ad1: 'A+D1', b: 'B', c: 'C'})[mode];
+    hudMode.textContent = ({ad1: 'A', b: 'B', c: 'C'})[mode];
     explainTitle.textContent = explains[mode].title;
     explainBody.innerHTML = explains[mode].body;
     previewBanner.style.display = 'none';
