@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneAD 桌機置底 Plus · Video + Banner</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    font-family: -apple-system, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    color: #595757;
+    background: #000;
+    overflow: hidden;
+  }
+
+  /* ---------- Stage (scales 1920x1080 to viewport) ---------- */
+  .stage-frame {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+  }
+  .stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    transform-origin: center center;
+    background: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 0 40px rgba(0,0,0,.5);
+  }
+
+  /* ---------- Fake News.com page background ---------- */
+  .page-bg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1920px;
+    height: 1003px;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* ---------- Ad bar (bottom 300px) ---------- */
+  .ad-bar {
+    position: absolute;
+    left: 0;
+    top: 780px;
+    width: 1920px;
+    height: 300px;
+    z-index: 10;
+  }
+  .bg-bar {
+    position: absolute;
+    left: 0;
+    top: 1px;
+    width: 1920px;
+    height: 300px;
+    background: #000;
+    box-shadow: 0 -2px 8px rgba(0,0,0,.25);
+  }
+
+  /* Banner strip: 1920x300, source image cropped per Figma spec */
+  .image-right {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1920px;
+    height: 300px;
+    overflow: hidden;
+    z-index: 2;
+  }
+  .image-right img {
+    position: absolute;
+    height: 100%;
+    left: 25.55%;
+    top: 0;
+    width: 75.68%;
+    max-width: none;
+    display: block;
+  }
+
+  /* Video-left: overlays banner left, autoplays muted loop */
+  .video-left {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 534px;
+    height: 300px;
+    background: #000;
+    z-index: 3;
+    overflow: hidden;
+  }
+  .video-left video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+  }
+
+  /* Close button (top-left, sits above ad-bar) */
+  .ad-close {
+    position: absolute;
+    left: 24px;
+    top: -32px;
+    width: 24px;
+    height: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 6;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));
+  }
+  .ad-close img { width: 24px; height: 24px; display: block; }
+
+  /* OneAD logo (bottom-right corner) */
+  .onead-logo {
+    position: absolute;
+    left: 1876px;
+    top: 268px;
+    width: 32px;
+    height: 32px;
+    z-index: 6;
+    background: #fff;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+    color: #ff006e;
+    letter-spacing: .5px;
+  }
+
+  /* ---------- Top hint "滑入看更多" (fades in/out with attract cursor) ---------- */
+  .top-hint {
+    position: absolute;
+    left: 50%;
+    top: -68px;
+    transform: translateX(-50%);
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,.3));
+    animation: hintPulse 3.4s ease-in-out infinite;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .top-hint.hidden { animation: none; opacity: 0; }
+  @keyframes hintPulse {
+    0%, 10% { opacity: 0; }
+    26%     { opacity: 1; }
+    76%     { opacity: 1; }
+    92%     { opacity: 0; }
+    100%    { opacity: 0; }
+  }
+  .top-hint .body {
+    background: #333;
+    border: 1px solid #333;
+    padding: 10px 20px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .top-hint .txt {
+    color: #fff;
+    font-family: Roboto, -apple-system, "Noto Sans TC", sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 30px;
+    white-space: nowrap;
+    letter-spacing: 1px;
+  }
+  .top-hint .arrow {
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 12px solid #333;
+    margin-top: -1px;
+  }
+
+  /* ---------- Attract cursor (dives from above ad down into it) ---------- */
+  .attention-cursor {
+    position: absolute;
+    left: 50%;
+    top: -28px;
+    width: 56px;
+    height: 56px;
+    z-index: 25;
+    pointer-events: none;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,.5));
+    transform: translateX(-50%);
+    animation: cursorDive 3.4s ease-in-out infinite;
+    opacity: 0;
+  }
+  .attention-cursor.hidden { animation: none; opacity: 0; }
+  @keyframes cursorDive {
+    0%   { transform: translateX(-50%) translateY(-80px);  opacity: 0; }
+    10%  { transform: translateX(-50%) translateY(-80px);  opacity: 1; }
+    45%  { transform: translateX(-50%) translateY(180px);  opacity: 1; }
+    68%  { transform: translateX(-50%) translateY(180px);  opacity: 1; }
+    92%  { transform: translateX(-50%) translateY(-80px);  opacity: 0; }
+    100% { transform: translateX(-50%) translateY(-80px);  opacity: 0; }
+  }
+
+  /* ---------- Fullscreen video overlay ---------- */
+  .fullscreen-video {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 0;
+    z-index: 200;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+    transition: height .55s cubic-bezier(.22, 1, .36, 1), opacity .35s ease;
+    will-change: height;
+  }
+  .fullscreen-video.active {
+    height: 100%;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .fullscreen-video video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+  }
+  .fs-close {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(0,0,0,.6);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,.3);
+    cursor: pointer;
+    font-size: 24px;
+    z-index: 210;
+    font-family: inherit;
+  }
+  .fs-close:hover { background: rgba(0,0,0,.9); }
+  .video-brand {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 2px;
+    z-index: 210;
+    text-shadow: 0 2px 8px rgba(0,0,0,.6);
+  }
+  .video-brand .brand { color: #ff006e; }
+
+  /* Hint that video-left is the hot zone after restricted */
+  .stage.restricted .video-left {
+    outline: 3px dashed rgba(251, 191, 36, .9);
+    outline-offset: -3px;
+    animation: hotzonePulse 2s ease-in-out infinite;
+  }
+  @keyframes hotzonePulse {
+    0%, 100% { outline-color: rgba(251,191,36,.6); }
+    50%      { outline-color: rgba(251,191,36,1); }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage-frame">
+  <div class="stage" id="stage">
+
+    <img class="page-bg" src="assets/page-bg.png" alt="page">
+
+    <div class="ad-bar" id="adBar">
+      <div class="top-hint" id="topHint">
+        <div class="body"><span class="txt">滑入看更多</span></div>
+        <div class="arrow"></div>
+      </div>
+      <img class="attention-cursor" id="attentionCursor" src="assets/cursor.svg" alt="">
+      <div class="bg-bar"></div>
+
+      <div class="image-right">
+        <img src="assets/banner.png" alt="banner">
+      </div>
+
+      <div class="video-left" id="videoLeft">
+        <video id="idleVideo" src="assets/video.mp4" autoplay muted loop playsinline preload="auto"></video>
+      </div>
+
+      <button class="ad-close" id="adClose" aria-label="close">
+        <img src="assets/ic-close.svg" alt="close">
+      </button>
+
+      <div class="onead-logo">OneAD</div>
+    </div>
+
+    <div class="fullscreen-video" id="fsVideo">
+      <video id="fsVideoEl" src="assets/video.mp4" playsinline preload="auto"></video>
+      <div class="video-brand"><span class="brand">▶</span> OneAD Video</div>
+      <button class="fs-close" id="fsClose" aria-label="close">✕</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const stage = $('stage');
+  const adBar = $('adBar');
+  const videoLeft = $('videoLeft');
+  const fsVideo = $('fsVideo');
+  const fsClose = $('fsClose');
+  const adClose = $('adClose');
+  const topHint = $('topHint');
+  const attentionCursor = $('attentionCursor');
+  const idleVideo = $('idleVideo');
+  const fsVideoEl = $('fsVideoEl');
+
+  let scale = 1;
+  let expanded = false;
+  let restricted = false;
+  let armed = true;
+  let adDismissed = false;
+
+  function updateScale() {
+    const availW = window.innerWidth;
+    const availH = window.innerHeight;
+    const scaleX = availW / 1920;
+    const scaleY = availH / 1080;
+    scale = Math.min(scaleX, scaleY, 1);
+    stage.style.transform = `scale(${scale})`;
+  }
+  window.addEventListener('resize', updateScale);
+  updateScale();
+
+  function inNode(e, el) {
+    const rect = el.getBoundingClientRect();
+    return e.clientX >= rect.left && e.clientX <= rect.right
+        && e.clientY >= rect.top && e.clientY <= rect.bottom;
+  }
+
+  function expand() {
+    if (expanded || adDismissed) return;
+    expanded = true;
+    topHint.classList.add('hidden');
+    attentionCursor.classList.add('hidden');
+    fsVideo.classList.add('active');
+    try {
+      fsVideoEl.currentTime = idleVideo.currentTime || 0;
+    } catch (_) {}
+    fsVideoEl.muted = false;
+    const p = fsVideoEl.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(() => {
+        fsVideoEl.muted = true;
+        fsVideoEl.play().catch(() => {});
+      });
+    }
+  }
+
+  function collapse() {
+    if (!expanded) return;
+    expanded = false;
+    fsVideo.classList.remove('active');
+    fsVideoEl.pause();
+    restricted = true;
+    armed = true;
+    stage.classList.add('restricted');
+    topHint.classList.remove('hidden');
+    attentionCursor.classList.remove('hidden');
+  }
+
+  function dismissAd() {
+    adDismissed = true;
+    adBar.style.transition = 'transform .4s ease, opacity .4s ease';
+    adBar.style.transform = 'translateY(320px)';
+    adBar.style.opacity = '0';
+    topHint.classList.add('hidden');
+    attentionCursor.classList.add('hidden');
+    idleVideo.pause();
+  }
+
+  fsClose.addEventListener('click', (e) => {
+    e.stopPropagation();
+    collapse();
+  });
+
+  adClose.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dismissAd();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (expanded || adDismissed) return;
+
+    if (!restricted) {
+      // First run: whole ad-bar is hot; immediate expand on entry
+      if (!inNode(e, adBar)) {
+        armed = true;
+      } else if (armed) {
+        armed = false;
+        expand();
+      }
+    } else {
+      // After first close: only video-left is hot; still immediate
+      const hot = inNode(e, videoLeft);
+      if (!hot) {
+        armed = true;
+      } else if (armed) {
+        armed = false;
+        expand();
+      }
+    }
+  });
+
+  // Loop idle video continues from where fullscreen left off when collapsed
+  fsVideoEl.addEventListener('pause', () => {
+    try {
+      idleVideo.currentTime = fsVideoEl.currentTime || 0;
+    } catch (_) {}
+  });
+
+  // Kick off idle playback (autoplay attribute usually covers this; belt & braces)
+  idleVideo.play().catch(() => {});
+})();
+</script>
+</body>
+</html>
