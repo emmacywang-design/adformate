@@ -330,7 +330,6 @@
 
   let scale = 1;
   let expanded = false;
-  let restricted = false;
   let armed = true;
   let adDismissed = false;
 
@@ -375,9 +374,7 @@
     expanded = false;
     fsVideo.classList.remove('active');
     fsVideoEl.pause();
-    restricted = true;
     armed = true;
-    stage.classList.add('restricted');
     topHint.classList.remove('hidden');
     attentionCursor.classList.remove('hidden');
   }
@@ -405,23 +402,12 @@
   document.addEventListener('mousemove', (e) => {
     if (expanded || adDismissed) return;
 
-    if (!restricted) {
-      // First run: whole ad-bar is hot; immediate expand on entry
-      if (!inNode(e, adBar)) {
-        armed = true;
-      } else if (armed) {
-        armed = false;
-        expand();
-      }
-    } else {
-      // After first close: only video-left is hot; still immediate
-      const hot = inNode(e, videoLeft);
-      if (!hot) {
-        armed = true;
-      } else if (armed) {
-        armed = false;
-        expand();
-      }
+    // Whole ad-bar is always the hot zone; must leave before re-triggering.
+    if (!inNode(e, adBar)) {
+      armed = true;
+    } else if (armed) {
+      armed = false;
+      expand();
     }
   });
 
