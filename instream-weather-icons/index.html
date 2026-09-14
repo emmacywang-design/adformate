@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneAD inStream · 環境變因圖示</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    font-family: -apple-system, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    color: #595757;
+    background: #f5f5f5; /* Figma page「環境變因」背景 */
+  }
+  .wrap { max-width: 1360px; margin: 0 auto; padding: 56px 40px 80px; }
+
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: .02em; }
+  h2 { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+  h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+  .sub { margin-top: 8px; font-size: 15px; line-height: 1.7; color: #8c8c8c; }
+  .sub code, .note code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  section { margin-top: 48px; }
+  .block { margin-top: 28px; }
+  .note { margin-top: 10px; font-size: 13px; line-height: 1.7; color: #a0a0a0; }
+
+  /* ---------- 設計還原：深灰底取自 icons frame (348:465) #4a4a4a ---------- */
+  .design-surface {
+    display: inline-block;
+    padding: 48px 56px;
+    background: #4a4a4a;
+    border-radius: 4px;
+  }
+  .icon-row { display: flex; align-items: flex-start; }
+  .icon-row.gap-50 { gap: 50px; } /* 天氣列 348:468 itemSpacing 50 */
+  .icon-row.gap-48 { gap: 48px; } /* AQI 列 348:502、濕度列 348:483 itemSpacing 48 */
+
+  /* 所有圖示的外框一律 80x80（Figma 節點尺寸） */
+  .icon-box {
+    position: relative;
+    flex-shrink: 0;
+    width: 80px;
+    height: 80px;
+  }
+  /* 資產本身就是 80x80，直接填滿外框 */
+  .icon-box > .fill { position: absolute; top: 0; left: 0; width: 80px; height: 80px; }
+
+  /* 例外一：temperature (348:478) 匯出資產為內層 group 26.9195x55.9709，
+     於 80x80 中的位置 = top 15% / left 33.75%（即 12px / 27px）。
+     不可拉伸至 80x80，否則比例失真。 */
+  .icon-box > .leaf-temperature {
+    position: absolute;
+    top: 12px; left: 27px;
+    width: 26.9195px; height: 55.9709px;
+  }
+  /* 例外二：AQI-VERY UNHEALTHY (348:511) / AQI-HAZARDOUS (348:518)
+     匯出資產為內層 group 44x44，於 80x80 中置中（inset 22.5% = 18px）。 */
+  .icon-box > .leaf-44 {
+    position: absolute;
+    top: 18px; left: 18px;
+    width: 44px; height: 44px;
+  }
+
+  /* AQI 中文標籤（Figma 348:525） */
+  .aqi-labels { display: flex; gap: 48px; margin-top: 20px; }
+  .aqi-labels span {
+    flex-shrink: 0;
+    width: 80px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #fff;
+    text-align: center;
+  }
+
+  /* ---------- 命名對照 ---------- */
+  .legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+    gap: 16px;
+  }
+  .legend-item {
+    background: #fff;
+    border: 1px solid #e4e4e4;
+    border-radius: 10px;
+    padding: 20px 16px;
+    text-align: center;
+  }
+  .legend-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 112px;
+    height: 112px;
+    border-radius: 8px;
+    background: #4a4a4a;
+  }
+  .legend-zh { margin-top: 14px; font-size: 16px; font-weight: 700; }
+  .legend-en {
+    margin-top: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    color: #8c8c8c;
+    word-break: break-all;
+  }
+  .legend-node {
+    margin-top: 2px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: #b5b5b5;
+  }
+  .legend-flag {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #f0eae0;
+    font-size: 11px;
+    color: #9a8352;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>OneAD inStream · 環境變因圖示</h1>
+  <p class="sub">
+    來源：Figma <code>inStream</code> → page 環境變因 → <code>icons</code>（<code>348:465</code>）<br>
+    共 21 顆圖示，外框皆 80×80。SVG 已下載至 <code>assets/</code>，以語意化英文命名。
+  </p>
+
+  <!-- ============================================================ -->
+  <section>
+    <h2>設計還原</h2>
+
+    <div class="block">
+      <h3>天氣 · <code>Frame 6</code>（348:468）</h3>
+      <div class="design-surface">
+        <div class="icon-row gap-50">
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/weather-sunny.svg"         alt="晴天"></span>
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/weather-partly-cloudy.svg" alt="晴時多雲"></span>
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/weather-overcast.svg"      alt="陰天"></span>
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/weather-cloudy.svg"        alt="多雲"></span>
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/weather-rain.svg"          alt="雨天"></span>
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/weather-sun-shower.svg"    alt="太陽雨"></span>
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/weather-thunderstorm.svg"  alt="雷雨"></span>
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/weather-snow.svg"          alt="雪"></span>
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/weather-fog.svg"           alt="霧"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>空氣品質 AQI · <code>Frame 6</code>（348:502）</h3>
+      <div class="design-surface">
+        <div class="icon-row gap-48">
+          <span class="icon-box"><img class="fill"    width="80" height="80" src="assets/aqi-good.svg"                alt="良好"></span>
+          <span class="icon-box"><img class="fill"    width="80" height="80" src="assets/aqi-moderate.svg"            alt="普通"></span>
+          <span class="icon-box"><img class="fill"    width="80" height="80" src="assets/aqi-unhealthy-sensitive.svg" alt="敏感族群不良"></span>
+          <span class="icon-box"><img class="fill"    width="80" height="80" src="assets/aqi-unhealthy.svg"           alt="所有族群不良"></span>
+          <span class="icon-box"><img class="leaf-44" width="44" height="44" src="assets/aqi-very-unhealthy.svg"      alt="非常不良"></span>
+          <span class="icon-box"><img class="leaf-44" width="44" height="44" src="assets/aqi-hazardous.svg"           alt="有害"></span>
+        </div>
+        <div class="aqi-labels">
+          <span>良好</span><span>普通</span><span>敏感族群不良</span>
+          <span>所有族群不良</span><span>非常不良</span><span>有害</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>濕度 · <code>Frame 7</code>（348:483）</h3>
+      <div class="design-surface">
+        <div class="icon-row gap-48">
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/humidity-0.svg"   alt="濕度 0%"></span>
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/humidity-50.svg"  alt="濕度 50%"></span>
+          <span class="icon-box"><img class="fill" width="80" height="80" src="assets/humidity-100.svg" alt="濕度 100%"></span>
+        </div>
+      </div>
+      <p class="note">
+        Figma 中 <code>humidity-0</code>、<code>humidity-50</code> 為隱藏圖層，且與 <code>humidity-100</code> 重疊於同一位置；
+        此處依 0 → 50 → 100 的級距並排呈現。
+      </p>
+    </div>
+
+    <div class="block">
+      <h3>溫度 / 紫外線 / 雨傘 · <code>348:478</code>、<code>348:466</code>、<code>348:532</code></h3>
+      <div class="design-surface">
+        <div class="icon-row gap-48">
+          <span class="icon-box"><img class="leaf-temperature" width="27" height="56" src="assets/temperature.svg" alt="溫度"></span>
+          <span class="icon-box"><img class="fill"             width="80" height="80" src="assets/uv.svg"          alt="紫外線"></span>
+          <span class="icon-box"><img class="fill"             width="80" height="80" src="assets/umbrella.svg"    alt="雨傘"></span>
+        </div>
+      </div>
+      <p class="note">
+        三者在 Figma 中分屬不同節點、非同一列，此處合併展示。
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section>
+    <h2>命名對照</h2>
+    <div class="legend" id="legend"></div>
+  </section>
+
+</div>
+
+<script>
+  // 單一清單：新增圖示時只需在此追加一筆
+  // leaf 省略 = 資產本身 80x80；其餘為匯出資產與 80x80 外框不一致者
+  const ICONS = [
+    { group: '天氣',   file: 'weather-sunny',           zh: '晴天',         node: '2058:256' },
+    { group: '天氣',   file: 'weather-partly-cloudy',   zh: '晴時多雲',      node: '2058:283' },
+    { group: '天氣',   file: 'weather-overcast',        zh: '陰天',         node: '2058:291' },
+    { group: '天氣',   file: 'weather-cloudy',          zh: '多雲',         node: '2058:289' },
+    { group: '天氣',   file: 'weather-rain',            zh: '雨天',         node: '2058:278' },
+    { group: '天氣',   file: 'weather-sun-shower',      zh: '太陽雨',       node: '2058:266' },
+    { group: '天氣',   file: 'weather-thunderstorm',    zh: '雷雨',         node: '2058:293' },
+    { group: '天氣',   file: 'weather-snow',            zh: '雪',           node: '2058:300' },
+    { group: '天氣',   file: 'weather-fog',             zh: '霧',           node: '2058:310' },
+
+    { group: 'AQI',    file: 'aqi-good',                zh: '良好',         node: '348:503' },
+    { group: 'AQI',    file: 'aqi-moderate',            zh: '普通',         node: '348:505' },
+    { group: 'AQI',    file: 'aqi-unhealthy-sensitive', zh: '敏感族群不良',  node: '348:507' },
+    { group: 'AQI',    file: 'aqi-unhealthy',           zh: '所有族群不良',  node: '348:509' },
+    { group: 'AQI',    file: 'aqi-very-unhealthy',      zh: '非常不良',     node: '348:511', leaf: 'leaf-44' },
+    { group: 'AQI',    file: 'aqi-hazardous',           zh: '有害',         node: '348:518', leaf: 'leaf-44' },
+
+    { group: '其他',   file: 'temperature',             zh: '溫度',         node: '348:478', leaf: 'leaf-temperature' },
+    { group: '其他',   file: 'humidity-0',              zh: '濕度 0%',      node: '348:484', flag: 'Figma 隱藏' },
+    { group: '其他',   file: 'humidity-50',             zh: '濕度 50%',     node: '348:486', flag: 'Figma 隱藏' },
+    { group: '其他',   file: 'humidity-100',            zh: '濕度 100%',    node: '348:489' },
+    { group: '其他',   file: 'uv',                      zh: '紫外線',       node: '348:466' },
+    { group: '其他',   file: 'umbrella',                zh: '雨傘',         node: '348:532', flag: '原名 AQI umbrella-outline' }
+  ];
+
+  const LEAF_SIZE = {
+    'leaf-44':          { w: 44, h: 44 },
+    'leaf-temperature': { w: 27, h: 56 }
+  };
+
+  document.getElementById('legend').innerHTML = ICONS.map(function (icon) {
+    const leafClass = icon.leaf || 'fill';
+    const size = LEAF_SIZE[leafClass] || { w: 80, h: 80 };
+    return '<div class="legend-item">' +
+             '<span class="legend-chip">' +
+               '<span class="icon-box">' +
+                 '<img class="' + leafClass + '" width="' + size.w + '" height="' + size.h + '"' +
+                      ' src="assets/' + icon.file + '.svg" alt="">' +
+               '</span>' +
+             '</span>' +
+             '<div class="legend-zh">' + icon.zh + '</div>' +
+             '<div class="legend-en">' + icon.file + '</div>' +
+             '<div class="legend-node">' + icon.node + '</div>' +
+             (icon.flag ? '<span class="legend-flag">' + icon.flag + '</span>' : '') +
+           '</div>';
+  }).join('');
+</script>
+</body>
+</html>
