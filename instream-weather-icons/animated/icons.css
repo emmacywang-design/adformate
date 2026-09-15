@@ -1,0 +1,280 @@
+/* ===========================================================
+   環境變因 Icon 動畫（19 顆）
+   來源：Figma / Rich media AD Formats → 環境變因
+         weather (9) / metrics (4) / AQI (6)
+   每顆 icon 都是 80×80 viewBox，白色填色。
+   動畫分組對應 Figma 裡 Boolean Union 底下的 operand 向量。
+   =========================================================== */
+
+:root {
+  --wi-size: 80px;
+  --wi-color: #ffffff;
+}
+
+.wi {
+  width: var(--wi-size);
+  height: var(--wi-size);
+  display: block;
+  fill: var(--wi-color);
+  overflow: visible;
+}
+
+/* 會動的群組統一用 view-box 當座標基準，transform-origin 就能直接寫
+   icon 內的絕對座標（預設 40 40 = 正中心）。
+   旋轉中心透過 --ox / --oy 覆寫 —— 不用更具體的選擇器，
+   否則這條規則的特異性 (0,2,1) 會壓過 .wi--xxx .wi-yyy (0,2,0)。*/
+.wi g[class^="wi-"] {
+  transform-box: view-box;
+  transform-origin: var(--ox, 40px) var(--oy, 40px);
+}
+
+/* -----------------------------------------------------------
+   共用 keyframes
+   ----------------------------------------------------------- */
+
+@keyframes wi-spin     { to { transform: rotate(360deg); } }
+@keyframes wi-spin-rev { to { transform: rotate(-360deg); } }
+
+/* 半露出的太陽（晴時多雲、太陽雨、UV）只能小幅擺動，不能整圈轉：
+   光芒只畫在露出來的那段弧上，轉一整圈會讓光芒跑到雲／文字的位置，
+   而雲是空心線條擋不住，光芒會直接穿出來。*/
+@keyframes wi-sway {
+  0%, 100% { transform: rotate(-10deg); }
+  50%      { transform: rotate(10deg); }
+}
+
+/* 太陽圓盤的呼吸感，幅度很小，只是讓它不要死板 */
+@keyframes wi-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.055); }
+}
+
+/* 雲的漂浮：左右加一點點上下 */
+@keyframes wi-float {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(1.6px, -0.8px); }
+  50%      { transform: translate(0, -1.4px); }
+  75%      { transform: translate(-1.6px, -0.8px); }
+}
+
+@keyframes wi-float-slow {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(-2.2px, -1px); }
+}
+
+/* 雨滴：往下掉並淡出，回到原位時淡入 */
+@keyframes wi-fall {
+  0%   { transform: translateY(-4px); opacity: 0; }
+  20%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: translateY(9px);  opacity: 0; }
+}
+
+/* 閃電：平常維持全亮（icon 才不會看起來像破圖），
+   只在一個循環裡快速閃爍兩下 */
+@keyframes wi-flash {
+  0%, 40%   { opacity: 1;   transform: scale(1); }
+  44%       { opacity: 0.2; transform: scale(0.97); }
+  48%       { opacity: 1;   transform: scale(1.06); }
+  52%       { opacity: 0.3; transform: scale(0.98); }
+  56%       { opacity: 1;   transform: scale(1.03); }
+  62%, 100% { opacity: 1;   transform: scale(1); }
+}
+
+/* 霧：水平漂移 + 濃淡變化 */
+@keyframes wi-drift {
+  0%, 100% { transform: translateX(-2.6px); opacity: 0.72; }
+  50%      { transform: translateX(2.6px);  opacity: 1; }
+}
+
+/* ===========================================================
+   一、天氣 weather（9）
+   =========================================================== */
+
+/* 1. 晴天 —— 8 道光芒平均分布，可以整圈轉 */
+.wi--sunny .wi-rays { animation: wi-spin 14s linear infinite; }
+.wi--sunny .wi-core { animation: wi-breathe 3.6s ease-in-out infinite; }
+
+/* 2. 晴時多雲 */
+.wi--partly-cloudy .wi-rays {
+  --ox: 49.9px; --oy: 37.9px;
+  animation: wi-sway 5.5s ease-in-out infinite;
+}
+.wi--partly-cloudy .wi-cloud { animation: wi-float 7s ease-in-out infinite; }
+
+/* 3. 陰天 */
+.wi--overcast .wi-cloud { animation: wi-float 6.5s ease-in-out infinite; }
+
+/* 4. 多雲 —— 兩朵雲不同速度、不同相位，做出層次 */
+.wi--cloudy .wi-cloud-back  { animation: wi-float-slow 9s ease-in-out infinite; }
+.wi--cloudy .wi-cloud-front { animation: wi-float 6s ease-in-out infinite; animation-delay: -1.5s; }
+
+/* 5. 雨天 */
+.wi--rain .wi-cloud { animation: wi-float 7.5s ease-in-out infinite; }
+.wi--rain .wi-drop {
+  animation: wi-fall 1.35s cubic-bezier(.45, 0, .75, .5) infinite;
+  animation-delay: calc(var(--i) * -0.22s);
+}
+
+/* 6. 太陽雨 */
+.wi--sun-shower .wi-rays {
+  --ox: 49.9px; --oy: 33px;
+  animation: wi-sway 5.5s ease-in-out infinite;
+}
+.wi--sun-shower .wi-cloud { animation: wi-float 7.5s ease-in-out infinite; }
+.wi--sun-shower .wi-drop {
+  animation: wi-fall 1.5s cubic-bezier(.45, 0, .75, .5) infinite;
+  animation-delay: calc(var(--i) * -0.25s);
+}
+
+/* 7. 雷雨 —— 雲不動，讓閃電成為視覺焦點 */
+.wi--thunderstorm .wi-bolt {
+  --ox: 40px; --oy: 51px;
+  animation: wi-flash 2.8s ease-in-out infinite;
+}
+.wi--thunderstorm .wi-drop {
+  animation: wi-fall 1.4s cubic-bezier(.45, 0, .75, .5) infinite;
+  animation-delay: calc(var(--i) * -0.3s);
+}
+
+/* 8. 雪 */
+.wi--snow .wi-flake       { animation: wi-spin-rev 20s linear infinite; }
+.wi--snow .wi-flake-inner { animation: wi-breathe 4.5s ease-in-out infinite; }
+
+/* 9. 霧 —— 8 條霧線靠 --i 錯開相位、--dur 拉開速度 */
+.wi--fog .wi-line {
+  animation: wi-drift calc(var(--dur) * 1s) ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.55s);
+}
+
+/* ===========================================================
+   二、環境指標 metrics（4）
+   =========================================================== */
+
+/* 水銀柱從球部往上長／往下縮 */
+@keyframes wi-mercury {
+  0%, 100% { transform: scaleY(0.46); }
+  50%      { transform: scaleY(1); }
+}
+
+/* 雨傘從傘頂懸掛擺動 */
+@keyframes wi-umbrella {
+  0%, 100% { transform: rotate(-5deg); }
+  50%      { transform: rotate(5deg); }
+}
+
+/* 水滴：上浮時拉長、落回時壓扁 */
+@keyframes wi-drip {
+  0%, 100% { transform: translateY(0)      scale(1, 1); }
+  45%      { transform: translateY(-2.5px) scale(0.97, 1.05); }
+  70%      { transform: translateY(0.8px)  scale(1.04, 0.96); }
+}
+
+/* 10. 溫度 —— 水銀柱升降，球部同步呼吸，刻度不動 */
+.wi--temperature .wi-mercury {
+  --ox: 37.79px; --oy: 56.92px;  /* 以水銀柱底部為基準往上長 */
+  animation: wi-mercury 4.4s ease-in-out infinite;
+}
+.wi--temperature .wi-bulb {
+  --ox: 37.78px; --oy: 55.55px;
+  animation: wi-breathe 4.4s ease-in-out infinite;
+}
+
+/* 11. 雨傘 —— 整把傘以傘頂為支點擺動 */
+.wi--umbrella .wi-umbrella {
+  --ox: 40.13px; --oy: 13px;
+  animation: wi-umbrella 4.2s ease-in-out infinite;
+}
+
+/* 12. 濕度 */
+.wi--humidity .wi-drip {
+  --ox: 39.7px; --oy: 64px;      /* 以水滴底部為基準擠壓 */
+  animation: wi-drip 3.2s ease-in-out infinite;
+}
+
+/* 13. UV —— 光芒只在上半圈，同樣只能擺動 */
+.wi--uv .wi-rays {
+  --ox: 40.1px; --oy: 37.94px;
+  animation: wi-sway 5s ease-in-out infinite;
+}
+.wi--uv .wi-arc {
+  --ox: 40.1px; --oy: 37.94px;
+  animation: wi-breathe 3.4s ease-in-out infinite;
+}
+
+/* ===========================================================
+   三、空氣品質 AQI（6）
+   臉的狀態越差，動態就越不安定：
+   良好＝輕快彈跳 → 有害＝明顯搖晃
+   =========================================================== */
+
+/* 眨眼：壓扁眼睛的 Y 軸，大部分時間維持張開 */
+@keyframes wi-blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  94%           { transform: scaleY(0.12); }
+}
+
+@keyframes wi-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2.2px); }
+}
+
+@keyframes wi-bob-soft {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.1px); }
+}
+
+@keyframes wi-shake {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-3deg); }
+  75%      { transform: rotate(3deg); }
+}
+
+@keyframes wi-shake-hard {
+  0%, 100% { transform: translateX(0)     rotate(0deg); }
+  20%      { transform: translateX(-1.4px) rotate(-4.5deg); }
+  40%      { transform: translateX(1.4px)  rotate(4.5deg); }
+  60%      { transform: translateX(-1px)   rotate(-3deg); }
+  80%      { transform: translateX(1px)    rotate(3deg); }
+}
+
+/* X 眼睛：一縮一放，像在抽搐 */
+@keyframes wi-xpulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.16); }
+}
+
+/* 14. 良好 —— 開心的輕快彈跳 + 眨眼 */
+.wi--aqi-good .wi-face { animation: wi-bob 2.4s ease-in-out infinite; }
+.wi--aqi-good .wi-eye  { animation: wi-blink 4.2s ease-in-out infinite; }
+
+/* 15. 普通 —— 只眨沒有在眨的那隻眼（另一隻本來就是閉眼的 wink） */
+.wi--aqi-moderate .wi-face { animation: wi-bob-soft 3.2s ease-in-out infinite; }
+.wi--aqi-moderate .wi-eye  { animation: wi-blink 5s ease-in-out infinite; }
+
+/* 16. 敏感族群不良 —— 面無表情，慢慢地晃 */
+.wi--aqi-sensitive .wi-face { animation: wi-bob-soft 4.5s ease-in-out infinite; }
+.wi--aqi-sensitive .wi-eye  { animation: wi-blink 6s ease-in-out infinite; }
+
+/* 17. 所有族群不良 —— 開始搖頭 */
+.wi--aqi-unhealthy .wi-face { animation: wi-shake 3.4s ease-in-out infinite; }
+.wi--aqi-unhealthy .wi-eye  { animation: wi-blink 5.5s ease-in-out infinite; }
+
+/* 18. 非常不良 —— X 眼抽搐 + 搖晃 */
+.wi--aqi-very-unhealthy .wi-face { animation: wi-shake 2.6s ease-in-out infinite; }
+.wi--aqi-very-unhealthy .wi-x    { animation: wi-xpulse 1.8s ease-in-out infinite; }
+
+/* 19. 有害 —— 最不安定 */
+.wi--aqi-hazardous .wi-face { animation: wi-shake-hard 1.9s ease-in-out infinite; }
+.wi--aqi-hazardous .wi-x    { animation: wi-xpulse 1.3s ease-in-out infinite; }
+
+/* -----------------------------------------------------------
+   無障礙：使用者若在系統關掉動態效果，全部停下來
+   ----------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .wi * { animation: none !important; }
+}
+
+/* 給 demo 頁的「暫停」開關用 */
+.is-paused .wi * { animation-play-state: paused !important; }

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>環境變因 Icon GIF</title>
+<style>
+  body { margin:0; padding:40px 32px 64px; background:#2b2b2b; color:#f2f2f2;
+         font-family:"PingFang TC","Noto Sans TC",-apple-system,sans-serif; }
+  h1 { font-size:22px; margin:0 0 6px; }
+  .sub { color:#a8a8a8; font-size:13px; line-height:1.7; margin:0 0 24px; }
+  h2 { font-size:13px; letter-spacing:.06em; color:#cfcfcf; font-weight:600;
+        border-bottom:1px solid #454545; padding-bottom:9px; margin:34px 0 14px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:14px; }
+  figure { margin:0; background:var(--sw,#4d4d4d); border-radius:10px;
+            padding:22px 10px 14px; text-align:center; }
+  figcaption { margin-top:14px; font-size:14px; line-height:1.6; }
+  code { font-size:11px; color:#cfcfcf; font-family:ui-monospace,Menlo,monospace; }
+  .bar { display:flex; gap:10px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+  button { background:transparent; color:inherit; border:1px solid #6e6e6e;
+            border-radius:999px; padding:6px 16px; font:inherit; font-size:13px; cursor:pointer; }
+  button:hover { border-color:#fff; }
+</style></head><body>
+<h1>環境變因 Icon GIF</h1>
+<p class="sub">
+  19 顆．檔案 160×160．透明底．無限循環（此頁以 80px 顯示）<br>
+  圖示是白色的，換底色可以確認透明去背的邊緣狀況。
+</p>
+<div class="bar">
+  <button data-c="#4d4d4d">深灰底</button>
+  <button data-c="#000000">黑底</button>
+  <button data-c="#1c5c9c">藍底</button>
+  <button data-c="#c8402c">紅底</button>
+</div>
+  <h2>weather 天氣</h2>
+  <div class="grid">
+    <figure><img src="sunny.gif" width="80" height="80" alt="晴天"><figcaption>晴天<br><code>sunny.gif</code></figcaption></figure>
+    <figure><img src="partly-cloudy.gif" width="80" height="80" alt="晴時多雲"><figcaption>晴時多雲<br><code>partly-cloudy.gif</code></figcaption></figure>
+    <figure><img src="overcast.gif" width="80" height="80" alt="陰天"><figcaption>陰天<br><code>overcast.gif</code></figcaption></figure>
+    <figure><img src="cloudy.gif" width="80" height="80" alt="多雲"><figcaption>多雲<br><code>cloudy.gif</code></figcaption></figure>
+    <figure><img src="rain.gif" width="80" height="80" alt="雨天"><figcaption>雨天<br><code>rain.gif</code></figcaption></figure>
+    <figure><img src="sun-shower.gif" width="80" height="80" alt="太陽雨"><figcaption>太陽雨<br><code>sun-shower.gif</code></figcaption></figure>
+    <figure><img src="thunderstorm.gif" width="80" height="80" alt="雷雨"><figcaption>雷雨<br><code>thunderstorm.gif</code></figcaption></figure>
+    <figure><img src="snow.gif" width="80" height="80" alt="雪"><figcaption>雪<br><code>snow.gif</code></figcaption></figure>
+    <figure><img src="fog.gif" width="80" height="80" alt="霧"><figcaption>霧<br><code>fog.gif</code></figcaption></figure>
+  </div>
+  <h2>metrics 環境指標</h2>
+  <div class="grid">
+    <figure><img src="temperature.gif" width="80" height="80" alt="溫度"><figcaption>溫度<br><code>temperature.gif</code></figcaption></figure>
+    <figure><img src="umbrella.gif" width="80" height="80" alt="雨傘"><figcaption>雨傘<br><code>umbrella.gif</code></figcaption></figure>
+    <figure><img src="humidity.gif" width="80" height="80" alt="濕度"><figcaption>濕度<br><code>humidity.gif</code></figcaption></figure>
+    <figure><img src="uv.gif" width="80" height="80" alt="紫外線"><figcaption>紫外線<br><code>uv.gif</code></figcaption></figure>
+  </div>
+  <h2>AQI 空氣品質</h2>
+  <div class="grid">
+    <figure><img src="aqi-good.gif" width="80" height="80" alt="良好"><figcaption>良好<br><code>aqi-good.gif</code></figcaption></figure>
+    <figure><img src="aqi-moderate.gif" width="80" height="80" alt="普通"><figcaption>普通<br><code>aqi-moderate.gif</code></figcaption></figure>
+    <figure><img src="aqi-sensitive.gif" width="80" height="80" alt="敏感族群不良"><figcaption>敏感族群不良<br><code>aqi-sensitive.gif</code></figcaption></figure>
+    <figure><img src="aqi-unhealthy.gif" width="80" height="80" alt="所有族群不良"><figcaption>所有族群不良<br><code>aqi-unhealthy.gif</code></figcaption></figure>
+    <figure><img src="aqi-very-unhealthy.gif" width="80" height="80" alt="非常不良"><figcaption>非常不良<br><code>aqi-very-unhealthy.gif</code></figcaption></figure>
+    <figure><img src="aqi-hazardous.gif" width="80" height="80" alt="有害"><figcaption>有害<br><code>aqi-hazardous.gif</code></figcaption></figure>
+  </div>
+
+<script>
+document.querySelectorAll('.bar button').forEach(b =>
+  b.onclick = () => document.documentElement.style.setProperty('--sw', b.dataset.c));
+</script>
+</body></html>
