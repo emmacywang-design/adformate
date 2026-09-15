@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OneAD 廣告格式 Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    color: #595757;
+    background: #edefef;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 72px 40px 96px; }
+
+  h1 { font-size: 56px; font-weight: 700; letter-spacing: .01em; line-height: 1.25; }
+  .lede { margin-top: 14px; font-size: 17px; color: #8c8c8c; }
+
+  h2 {
+    font-size: 28px; font-weight: 700; margin: 56px 0 18px;
+    padding-bottom: 12px; border-bottom: 1px solid #d8dcdc;
+  }
+
+  ul { list-style: none; display: grid; gap: 12px;
+       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+
+  a.card {
+    display: block; background: #fff; border-radius: 8px;
+    padding: 20px 22px; text-decoration: none; color: inherit;
+    border: 1px solid #e2e5e5; transition: border-color .15s, transform .15s;
+  }
+  a.card:hover { border-color: #595757; transform: translateY(-2px); }
+  .t { font-size: 17px; font-weight: 700; }
+  .d { margin-top: 5px; font-size: 14px; color: #8c8c8c; }
+  .p { margin-top: 9px; font-size: 12px; color: #a8adad;
+       font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  footer { margin-top: 64px; font-size: 13px; color: #a8adad; }
+  footer a { color: #8c8c8c; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 48px 24px 72px; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>OneAD 廣告格式 Demo</h1>
+  <p class="lede">各版位的互動原型與設計資產，點進去可以直接操作。</p>
+
+  <h2>桌機置底 Plus</h2>
+  <ul>
+    <li><a class="card" href="desktop-ad/">
+      <div class="t">Video + Banner Gallery</div>
+      <div class="d">影音與 Banner 輪播的完整展示</div>
+      <div class="p">desktop-ad/</div>
+    </a></li>
+    <li><a class="card" href="desktop-ad-plus-ux/">
+      <div class="t">UX Demo</div>
+      <div class="d">展開、收合、全螢幕關閉等互動行為</div>
+      <div class="p">desktop-ad-plus-ux/</div>
+    </a></li>
+    <li><a class="card" href="desktop-ad-plus-video-banner/">
+      <div class="t">Video + Banner</div>
+      <div class="d">影音搭配 Banner 的版位組合</div>
+      <div class="p">desktop-ad-plus-video-banner/</div>
+    </a></li>
+  </ul>
+
+  <h2>inStream 環境變因</h2>
+  <ul>
+    <li><a class="card" href="instream-weather-icons/">
+      <div class="t">圖示規格</div>
+      <div class="d">21 顆圖示的尺寸、間距與命名對照</div>
+      <div class="p">instream-weather-icons/</div>
+    </a></li>
+    <li><a class="card" href="instream-weather-icons/animated/">
+      <div class="t">Icon 動畫（SVG）</div>
+      <div class="d">19 顆純 CSS 動畫，向量、可無限縮放</div>
+      <div class="p">instream-weather-icons/animated/</div>
+    </a></li>
+    <li><a class="card" href="instream-weather-icons/animated/gif/preview.html">
+      <div class="t">Icon 動畫（GIF）</div>
+      <div class="d">同樣 19 顆，160×160 透明去背循環 GIF</div>
+      <div class="p">instream-weather-icons/animated/gif/</div>
+    </a></li>
+  </ul>
+
+  <h2>互動遊戲</h2>
+  <ul>
+    <li><a class="card" href="puzzle.html">
+      <div class="t">Puzzle A Cut-1</div>
+      <div class="d">可口可樂城市瓶拼圖</div>
+      <div class="p">puzzle.html</div>
+    </a></li>
+  </ul>
+
+  <footer>
+    原始碼：<a href="https://github.com/emmacywang-design/adformate">github.com/emmacywang-design/adformate</a>
+  </footer>
+
+</div>
+</body>
+</html>
