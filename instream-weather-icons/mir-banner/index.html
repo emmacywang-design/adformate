@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MIR page — 氣候變因 · 今日天氣</title>
+<style>
+  /* Geometry is copied 1:1 from the Figma frame (720 x 1280), so every offset
+     below is an absolute pixel value from that artboard rather than a layout
+     the browser is free to reflow. The whole board is then scaled to fit. */
+  :root { --board-w: 720px; --board-h: 1280px; }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2b2b2b;
+    font-family: "Sarabun", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei",
+                 -apple-system, sans-serif;
+  }
+
+  /* Reserves the scaled footprint so the flex centring stays honest. */
+  .stage {
+    width: calc(var(--board-w) * var(--scale, 1));
+    height: calc(var(--board-h) * var(--scale, 1));
+  }
+
+  .board {
+    position: relative;
+    width: var(--board-w);
+    height: var(--board-h);
+    background: #fff;
+    overflow: hidden;
+    transform: scale(var(--scale, 1));
+    transform-origin: top left;
+  }
+
+  /* 10px white margin on every side, exactly as the Figma frame has it. */
+  .product {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    width: 700px;
+    height: 1260px;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .bar {
+    position: absolute;
+    left: 10px;
+    top: 1100px;
+    width: 700px;
+    height: 100px;
+    background: rgba(0, 0, 0, 0.56);
+  }
+
+  /* Shared treatment for the three text blocks in the bar. */
+  .cell {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: #fff;
+    font-size: 32px;
+    line-height: 1.2;
+    font-weight: 400;
+    text-align: center;
+    word-break: break-word;
+  }
+  /* Figma sets these in Sarabun, whose Latin digits are narrower than the CJK
+     fallback we actually get here. Breaking by hand keeps the line split the
+     designer chose instead of letting the fallback metrics decide it. */
+  .cell p { margin: 0; white-space: nowrap; }
+
+  .date   { left: 42px;  top: 1105px; width: 160px; height: 90px; }
+  .title  { left: 250px; top: 1105px; width: 190px; height: 90px; }
+  .status { left: 542px; top: 1105px; width: 136px; height: 90px; }
+
+  /* Figma draws this as an 80px line rotated 90°; a 2px box is the same thing. */
+  .divider {
+    position: absolute;
+    left: 226px;
+    top: 1110px;
+    width: 2px;
+    height: 80px;
+    background: #fff;
+  }
+
+  /* The animated replacement for the flat weather glyph in the Figma file.
+     Source GIF is 160x160, so at 80x80 it renders at 2x. */
+  .weather-icon {
+    position: absolute;
+    left: 457px;
+    top: 1110px;
+    width: 80px;
+    height: 80px;
+    display: block;
+  }
+
+  .logo {
+    position: absolute;
+    left: 653.33px;
+    top: 1223.3px;
+    width: 27.36px;
+    height: 21.25px;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="board">
+      <img class="product" src="assets/product.jpg" alt="Nike Air Force 1 Shadow">
+
+      <div class="bar"></div>
+
+      <div class="cell date">
+        <p>12 月 28 日</p>
+        <p>星 期 一</p>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="cell title">
+        <p>今日天氣</p>
+      </div>
+
+      <img class="weather-icon" src="../animated/gif/sun-shower.gif" alt="今日天氣：太陽雨">
+
+      <div class="cell status">
+        <p>太陽雨</p>
+      </div>
+
+      <img class="logo" src="assets/logo.svg" alt="OneAD">
+    </div>
+  </div>
+
+<script>
+  // The board is a fixed 720x1280 artboard, so scale it down to whatever the
+  // window can actually show instead of letting it overflow into a scrollbar.
+  function fit() {
+    const scale = Math.min(1, window.innerWidth / 720, window.innerHeight / 1280);
+    document.documentElement.style.setProperty("--scale", scale);
+  }
+  fit();
+  addEventListener("resize", fit);
+</script>
+</body>
+</html>
