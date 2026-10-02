@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MIB flash banner — 氣候變因貼紙</title>
+<style>
+  /* Geometry is copied 1:1 from the Figma frame "MIB flash_banner+變因貼紙"
+     (640 x 1136). Every offset is an absolute pixel value from that artboard;
+     the whole board is scaled to fit the window afterwards. */
+  :root {
+    --board-w: 640px;
+    --board-h: 1136px;
+    --cut-hold: 2000ms;   /* how long each sticker cut stays on screen */
+    --cut-fade: 400ms;    /* crossfade between cuts */
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #2b2b2b;
+    color: #f2f2f2;
+    font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- demo controls (not part of the ad) ---------- */
+  .toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 12px 28px;
+    padding: 20px 24px 0;
+  }
+  .group { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #a8a8a8; }
+  .toolbar button {
+    background: transparent; color: #f2f2f2;
+    border: 1px solid #6e6e6e; border-radius: 999px;
+    padding: 6px 14px; font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  .toolbar button:hover { border-color: #fff; }
+  .toolbar button[aria-pressed="true"] { background: #f2f2f2; color: #2b2b2b; border-color: #f2f2f2; }
+
+  .viewport { display: flex; justify-content: center; padding: 20px 24px 32px; }
+
+  /* Reserves the scaled footprint so centring stays honest. */
+  .stage {
+    width: calc(var(--board-w) * var(--scale, 1));
+    height: calc(var(--board-h) * var(--scale, 1));
+  }
+
+  .board {
+    position: relative;
+    width: var(--board-w);
+    height: var(--board-h);
+    background: #fff;
+    overflow: hidden;
+    transform: scale(var(--scale, 1));
+    transform-origin: top left;
+  }
+
+  /* ---------- host page (supplier web) ---------- */
+  .article { position: absolute; display: block; object-fit: cover; }
+  .article.a { left: 2px; top: -828px; width: 640px;    height: 970.164px; }
+  .article.b { left: 5px; top: 143px;  width: 615.385px; height: 932.85px; }
+
+  /* ---------- the ad ---------- */
+  .ad[hidden] { display: none; }
+
+  .banner {
+    position: absolute; left: 0; top: 775px;
+    width: 640px; height: 360px;
+    object-fit: cover; display: block;
+  }
+
+  .close {
+    position: absolute; left: 592px; top: 783px;
+    width: 40px; height: 40px;
+    padding: 0; border: 0; background: none; cursor: pointer;
+  }
+  .close img { display: block; width: 40px; height: 40px; }
+
+  .logo {
+    position: absolute; left: 589.909px; top: 1094.55px;
+    width: 24.1818px; height: 18.8728px; display: block;
+  }
+
+  /* Shared type: Figma sets every label in PingFang TC Regular 32 / 1.2. */
+  .label {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    color: #fff;
+    font-size: 32px;
+    line-height: 1.2;
+    font-weight: 400;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* ---------- sticker (circle) — cycles through cuts ---------- */
+  .sticker {
+    position: absolute; left: 18px; top: 803px;
+    width: 128px; height: 128px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.64);
+  }
+  .cut {
+    position: absolute; inset: 0;
+    opacity: 0;
+    transition: opacity var(--cut-fade) ease;
+  }
+  .cut.is-on { opacity: 1; }
+  .cut .label { left: 64px; top: 64px; }
+  .cut .icon { position: absolute; left: 24px; top: 24px; width: 80px; height: 80px; display: block; }
+  /* 倒數88天: mixed 24 / 40 / 24 sizes on one line. */
+  .cut .label .s { font-size: 24px; }
+  .cut .label .l { font-size: 40px; }
+
+  /* ---------- bar (rectangle) ---------- */
+  .bar {
+    position: absolute; left: 0; top: 1055px;
+    width: 640px; height: 80px;
+    background: rgba(0, 0, 0, 0.56);
+  }
+  .bar .date  { left: 108.5px; top: 40px; }
+  .bar .title { left: 280px;   top: 40px; }
+  .bar .value { left: 552px;   top: 40px; }
+  .bar .icon  { position: absolute; left: 384px; top: 0; width: 80px; height: 80px; display: block; }
+  .bar.is-uv .icon { left: 386px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cut { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="group" role="group" aria-label="貼紙類型">
+    貼紙
+    <button data-sticker="weather" aria-pressed="false">天氣</button>
+    <button data-sticker="temperature" aria-pressed="true">氣溫</button>
+    <button data-sticker="aqi" aria-pressed="false">空氣品質</button>
+    <button data-sticker="uv" aria-pressed="false">UV</button>
+    <button data-sticker="countdown" aria-pressed="false">倒數</button>
+  </div>
+  <div class="group" role="group" aria-label="資訊條類型">
+    資訊條
+    <button data-bar="weather" aria-pressed="true">天氣</button>
+    <button data-bar="temperature" aria-pressed="false">氣溫</button>
+    <button data-bar="aqi" aria-pressed="false">空氣品質</button>
+    <button data-bar="uv" aria-pressed="false">UV</button>
+  </div>
+  <div class="group">
+    <button id="pause">暫停輪播</button>
+    <button id="replay" hidden>重新顯示廣告</button>
+  </div>
+</div>
+
+<div class="viewport">
+  <div class="stage">
+    <div class="board">
+      <img class="article a" src="assets/article.png" alt="">
+      <img class="article b" src="assets/article.png" alt="">
+
+      <div class="ad" id="ad">
+        <img class="banner" src="assets/banner.jpg" alt="Nike Air Force 1 Shadow">
+
+        <div class="sticker" id="sticker" aria-live="polite"></div>
+
+        <div class="bar" id="bar"></div>
+
+        <img class="logo" src="assets/logo.svg" alt="OneAD">
+
+        <button class="close" id="close" aria-label="關閉廣告">
+          <img src="assets/btn-close.svg" alt="">
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Content for each sticker: three cuts shown in order — label, icon, value.
+  const STICKERS = {
+    weather:     { label: ["今日", "天氣"], icon: "../animated/gif/sunny.gif",       alt: "晴天",   value: "晴天" },
+    temperature: { label: ["今日", "氣溫"], icon: "../animated/gif/temperature.gif", alt: "溫度計", value: "30℃" },
+    aqi:         { label: ["空氣", "品質"], icon: "../animated/gif/aqi-good.gif",    alt: "良好",   value: "良好" },
+    uv:          { label: ["UV", "指數"],   icon: "../animated/gif/uv.gif",          alt: "紫外線", value: "中量級" },
+    countdown:   { label: ["限時", "優惠"], icon: "assets/countdown.svg",   alt: "倒數計時",
+                   valueHTML: '<span class="s">倒數</span><span class="l">88</span><span class="s">天</span>' },
+  };
+
+  const BARS = {
+    weather:     { title: "今日天氣", icon: "../animated/gif/sun-shower.gif",  alt: "太陽雨", value: "太陽雨" },
+    temperature: { title: "今日氣溫", icon: "../animated/gif/temperature.gif", alt: "溫度計", value: "30℃" },
+    aqi:         { title: "空氣品質", icon: "../animated/gif/aqi-good.gif",    alt: "良好",   value: "良好" },
+    uv:          { title: "UV指數",   icon: "../animated/gif/uv.gif",          alt: "紫外線", value: "中量級", cls: "is-uv" },
+  };
+  const DATE = "12月28日";
+
+  const sticker = document.getElementById("sticker");
+  const bar = document.getElementById("bar");
+  const hold = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cut-hold"));
+
+  let cuts = [], index = 0, timer = null, paused = false;
+
+  function renderSticker(key) {
+    const s = STICKERS[key];
+    const value = s.valueHTML || s.value;
+    sticker.innerHTML = `
+      <div class="cut"><p class="label">${s.label.join("<br>")}</p></div>
+      <div class="cut"><img class="icon" src="${s.icon}" alt="${s.alt}"></div>
+      <div class="cut"><p class="label">${value}</p></div>`;
+    cuts = [...sticker.querySelectorAll(".cut")];
+    index = 0;
+    cuts[0].classList.add("is-on");
+    restart();
+  }
+
+  function renderBar(key) {
+    const b = BARS[key];
+    bar.className = "bar " + (b.cls || "");
+    bar.innerHTML = `
+      <p class="label date">${DATE}</p>
+      <p class="label title">${b.title}</p>
+      <img class="icon" src="${b.icon}" alt="${b.alt}">
+      <p class="label value">${b.value}</p>`;
+  }
+
+  function next() {
+    cuts[index].classList.remove("is-on");
+    index = (index + 1) % cuts.length;
+    cuts[index].classList.add("is-on");
+  }
+
+  function restart() {
+    clearInterval(timer);
+    if (!paused) timer = setInterval(next, hold);
+  }
+
+  function select(attr, key) {
+    document.querySelectorAll(`[data-${attr}]`).forEach(btn =>
+      btn.setAttribute("aria-pressed", String(btn.dataset[attr] === key)));
+    attr === "sticker" ? renderSticker(key) : renderBar(key);
+  }
+
+  document.querySelectorAll("[data-sticker]").forEach(btn =>
+    btn.addEventListener("click", () => select("sticker", btn.dataset.sticker)));
+  document.querySelectorAll("[data-bar]").forEach(btn =>
+    btn.addEventListener("click", () => select("bar", btn.dataset.bar)));
+
+  const pauseBtn = document.getElementById("pause");
+  pauseBtn.addEventListener("click", () => {
+    paused = !paused;
+    pauseBtn.textContent = paused ? "繼續輪播" : "暫停輪播";
+    restart();
+  });
+
+  // Close hides the whole ad unit, like the live placement.
+  const ad = document.getElementById("ad");
+  const replay = document.getElementById("replay");
+  document.getElementById("close").addEventListener("click", () => {
+    ad.hidden = true; replay.hidden = false;
+  });
+  replay.addEventListener("click", () => {
+    ad.hidden = false; replay.hidden = true; select("sticker", document.querySelector('[data-sticker][aria-pressed="true"]').dataset.sticker);
+  });
+
+  // The board is a fixed 640x1136 artboard; scale it to the space under the toolbar.
+  function fit() {
+    const toolbar = document.querySelector(".toolbar").offsetHeight;
+    const scale = Math.min(1, (window.innerWidth - 48) / 640, (window.innerHeight - toolbar - 52) / 1136);
+    document.documentElement.style.setProperty("--scale", scale);
+  }
+  fit();
+  addEventListener("resize", fit);
+
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    paused = true;
+    pauseBtn.textContent = "繼續輪播";
+  }
+
+  // ?sticker=countdown&bar=uv opens a specific combination directly.
+  const params = new URLSearchParams(location.search);
+  const pick = (name, table, fallback) => (params.get(name) in table ? params.get(name) : fallback);
+  select("sticker", pick("sticker", STICKERS, "temperature"));
+  select("bar", pick("bar", BARS, "weather"));
+</script>
+</body>
+</html>
