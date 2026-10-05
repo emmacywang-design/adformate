@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MIB flash banner＋變因貼紙 — 四種示意</title>
+<style>
+  /* Each example is one mockup frame from Figma section 2759:261
+     (640 x 1136). Offsets are absolute artboard pixels; the board is
+     scaled to fit the window afterwards. */
+  :root { --board-w: 640px; --board-h: 1136px; }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #2b2b2b;
+    color: #f2f2f2;
+    font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- demo controls (not part of the ad) ---------- */
+  .toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 8px;
+    padding: 20px 24px 0;
+  }
+  .toolbar button {
+    background: transparent; color: #f2f2f2;
+    border: 1px solid #6e6e6e; border-radius: 999px;
+    padding: 6px 14px; font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  .toolbar button:hover { border-color: #fff; }
+  .toolbar button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .toolbar button[aria-pressed="true"] { background: #f2f2f2; color: #2b2b2b; border-color: #f2f2f2; }
+  .toolbar .sep { width: 1px; height: 18px; margin: 0 8px; background: #555; }
+
+  .viewport { display: flex; justify-content: center; padding: 20px 24px 32px; }
+  .stage {
+    width: calc(var(--board-w) * var(--scale, 1));
+    height: calc(var(--board-h) * var(--scale, 1));
+  }
+  .board {
+    position: relative;
+    width: var(--board-w); height: var(--board-h);
+    background: #fff;
+    overflow: hidden;
+    transform: scale(var(--scale, 1));
+    transform-origin: top left;
+  }
+  .board img { display: block; }
+
+  /* ---------- host page ---------- */
+  .article { position: absolute; object-fit: cover; }
+
+  /* ---------- the ad: slides up from the bottom edge ---------- */
+  .ad {
+    position: absolute; left: 0; top: 0; width: 640px; height: 1136px;
+    transition: transform 700ms cubic-bezier(.16, 1, .3, 1);
+  }
+  .ad.is-hidden { transform: translateY(var(--drop, 400px)); }
+  .ad > *, .area > * { position: absolute; }
+
+  .banner { left: 0; top: 775px; width: 640px; height: 360px; object-fit: cover; }
+  .logo   { width: 24.1818px; height: 18.8728px; }
+  .close  { width: 40px; height: 40px; padding: 0; border: 0; background: none; cursor: pointer; }
+  .close img { width: 40px; height: 40px; }
+
+  /* PingFang TC Regular 32 / 1.2, centred on a point — Figma's text boxes. */
+  .t {
+    position: absolute; margin: 0;
+    transform: translate(-50%, -50%);
+    color: #fff; font-size: 32px; line-height: 1.2; font-weight: 400;
+    text-align: center; white-space: nowrap;
+  }
+  .icon { position: absolute; width: 80px; height: 80px; }
+
+  /* Cuts: one visible at a time, 2000ms hold, 400ms crossfade. */
+  .cut { position: absolute; inset: 0; opacity: 0; transition: opacity 400ms ease; }
+  .cut.is-on { opacity: 1; }
+
+  .bar-h  { left: 0; top: 1055px; width: 640px; height: 80px; background: rgba(0, 0, 0, .56); }
+  .circle { left: 16px; top: 791px; width: 128px; height: 128px; border-radius: 50%; background: #c05dc8; }
+  .bar-v  { left: 16px; top: 791px; width: 80px; height: 230px; border-radius: 16px; background: rgba(0, 0, 0, .56); }
+
+  /* 舊版 MIB character: 640 x 380 ad area from y 756 */
+  .area   { left: 0; top: 756px; width: 640px; height: 380px; }
+  .pad    { left: 0; top: 160px; width: 640px; height: 120px; background: #1e1e1e;
+            clip-path: polygon(0 40px, 100% 0, 100% 100%, 0 100%); }
+  .appbar { left: 0; top: 280px; width: 640px; height: 100px; background: #ef6d73; }
+  .char { width: 200px; height: 200px; overflow: hidden; }
+  .char .box { position: absolute; display: flex; align-items: center; justify-content: center; }
+  .char img { object-fit: cover; flex: none; }
+  .c1 { left: 0;     top: 56px; }
+  .c1 .box { left: -30.42px; top: -22.74px; width: 256.319px; height: 252.486px; }
+  .c1 img  { width: 191.471px; height: 181px; transform: rotate(-30deg); }
+  .c2 { left: 220px; top: 80px; }
+  .c2 .box { left: -53.7px;  top: -50.5px;  width: 275.401px; height: 271.009px; }
+  .c2 img  { width: 206px; height: 194px; transform: rotate(150deg) scaleY(-1); }
+  .c3 { left: 440px; top: 80px; }
+  .c3 .box { left: -31.89px; top: -19.74px; width: 254.853px; height: 250.485px; }
+  .c3 img  { width: 190.933px; height: 179px; transform: rotate(-30deg); }
+  .hint { left: 81px; top: 0; width: 80px; height: 80px; }
+  .pill { left: 20px; top: 290px; width: 335px; height: 80px; border-radius: 300px; background: #ef6d73; }
+  .pill .n { font-size: 54px; }
+  .pill .u { font-size: 24px; }
+
+  /* step1_motion_up: pad and shoes rise into place, arrow nudges upward. */
+  .pad, .char { transition: transform 900ms cubic-bezier(.16, 1, .3, 1); }
+  .c2 { transition-delay: 90ms; }
+  .c3 { transition-delay: 180ms; }
+  .is-entering .pad, .is-entering .char { transform: translateY(240px); }
+  .hint img { animation: nudge 1600ms cubic-bezier(.45, 0, .2, 1) infinite; }
+  @keyframes nudge {
+    0%, 55%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-14px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ad, .pad, .char, .cut { transition: none; }
+    .hint img { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar" role="group" aria-label="示意">
+  <button data-ex="weather-bar" aria-pressed="true">天氣橫條</button>
+  <button data-ex="circle-temperature" aria-pressed="false">氣溫圓形</button>
+  <button data-ex="vertical-uv" aria-pressed="false">UV 直條</button>
+  <button data-ex="character-countdown" aria-pressed="false">倒數橫條（舊版 MIB character）</button>
+  <span class="sep" aria-hidden="true"></span>
+  <button id="replay">重新播放</button>
+</div>
+
+<div class="viewport">
+  <div class="stage">
+    <div class="board" id="board"></div>
+  </div>
+</div>
+
+<script>
+  const GIF = "../../animated/gif/";
+  const A = "../assets/";   // shared with the flat mib-banner demo
+  const M = "assets/";      // assets only this page uses
+
+  const articles = `
+    <img class="article" style="left:2px;top:-828px;width:640px;height:970.164px" src="${A}article.png" alt="">
+    <img class="article" style="left:5px;top:143px;width:615.385px;height:932.85px" src="${A}article.png" alt="">`;
+  const banner = `<img class="banner" src="${A}banner.jpg" alt="Nike Air Force 1 Shadow">`;
+  const logo = `<img class="logo" style="left:589.909px;top:1094.55px" src="${A}logo.svg" alt="OneAD">`;
+  const close = (left, top) => `
+    <button class="close" style="left:${left}px;top:${top}px" aria-label="關閉廣告">
+      <img src="${A}btn-close.svg" alt="">
+    </button>`;
+
+  const EXAMPLES = {
+    "weather-bar": {
+      host: articles,
+      ad: `${banner}
+        <div class="bar-h">
+          <p class="t" style="left:108.5px;top:40px">12月28日</p>
+          <p class="t" style="left:280px;top:40px">今日天氣</p>
+          <img class="icon" style="left:384px;top:0" src="${GIF}sun-shower.gif" alt="太陽雨">
+          <p class="t" style="left:552px;top:40px">太陽雨</p>
+        </div>
+        ${logo}${close(592, 783)}`,
+    },
+    "circle-temperature": {
+      host: articles,
+      ad: `${banner}
+        <div class="circle" data-cycle aria-live="polite">
+          <div class="cut"><p class="t" style="left:64px;top:64px">今日<br>氣溫</p></div>
+          <div class="cut"><img class="icon" style="left:24px;top:24px" src="${GIF}temperature.gif" alt="溫度計"></div>
+          <div class="cut"><p class="t" style="left:64px;top:64px">30℃</p></div>
+        </div>
+        ${logo}${close(592, 783)}`,
+    },
+    "vertical-uv": {
+      host: articles,
+      ad: `${banner}
+        <div class="bar-v">
+          <p class="t" style="left:40px;top:73px">UV<br>指<br>數</p>
+          <div data-cycle aria-live="polite">
+            <div class="cut"><img class="icon" style="left:0;top:134px" src="${GIF}uv.gif" alt="紫外線"></div>
+            <div class="cut"><p class="t" style="left:40px;top:176px;font-size:20px">中量級</p></div>
+          </div>
+        </div>
+        ${logo}${close(592, 783)}`,
+    },
+    "character-countdown": {
+      host: `<img class="article" style="left:26px;top:44.9px;width:592px;height:1011.194px" src="${A}article.png" alt="">`,
+      drop: 440,
+      ad: `
+        <div class="area">
+          <div class="pad"></div>
+          <div class="char c1"><div class="box"><img src="${M}character01.png" alt="Nike Ryz 365"></div></div>
+          <div class="char c2"><div class="box"><img src="${M}character02.png" alt="Nike ZoomX Streakfly"></div></div>
+          <div class="char c3"><div class="box"><img src="${M}character03.png" alt="Nike Air VaporMax"></div></div>
+          <div class="hint"><img src="${M}icon-arrow-up.svg" alt="往上滑"></div>
+          <div class="appbar"></div>
+          <div class="pill">
+            <p class="t" style="left:80px;top:40px">優惠倒數</p>
+            <img class="icon" style="left:152px;top:0" src="${M}icon-countdown-animated.svg" alt="">
+            <p class="t" style="left:279.5px;top:40.5px"><span class="n">18</span><span class="u">天</span></p>
+          </div>
+          <img class="logo" style="left:589.909px;top:338.55px" src="${A}logo.svg" alt="OneAD">
+        </div>
+        ${close(584, 716)}`,
+    },
+  };
+
+  const board = document.getElementById("board");
+  const buttons = [...document.querySelectorAll("[data-ex]")];
+  let current, timers = [];
+
+  function show(key) {
+    current = key;
+    timers.forEach(clearTimeout);
+    timers.forEach(clearInterval);
+    timers = [];
+    buttons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.ex === key)));
+    history.replaceState(null, "", `?ex=${key}`);
+
+    const ex = EXAMPLES[key];
+    board.innerHTML = `${ex.host}<div class="ad is-hidden" id="ad">${ex.ad}</div>`;
+    const ad = document.getElementById("ad");
+    ad.style.setProperty("--drop", (ex.drop || 400) + "px");
+    if (key === "character-countdown") ad.classList.add("is-entering");
+
+    ad.querySelectorAll("[data-cycle]").forEach(group => {
+      const cuts = [...group.querySelectorAll(".cut")];
+      let i = 0;
+      cuts[0].classList.add("is-on");
+      timers.push(setInterval(() => {
+        cuts[i].classList.remove("is-on");
+        i = (i + 1) % cuts.length;
+        cuts[i].classList.add("is-on");
+      }, 2000));
+    });
+
+    timers.push(setTimeout(() => {
+      ad.classList.remove("is-hidden");
+      timers.push(setTimeout(() => ad.classList.remove("is-entering"), 250));
+    }, 400));
+
+    ad.querySelector(".close").addEventListener("click", () => ad.classList.add("is-hidden"));
+  }
+
+  buttons.forEach(b => b.addEventListener("click", () => show(b.dataset.ex)));
+  document.getElementById("replay").addEventListener("click", () => show(current));
+
+  // The board is a fixed 640x1136 artboard; scale it to the space under the toolbar.
+  function fit() {
+    const toolbar = document.querySelector(".toolbar").offsetHeight;
+    const scale = Math.min(1, (window.innerWidth - 48) / 640, (window.innerHeight - toolbar - 52) / 1136);
+    document.documentElement.style.setProperty("--scale", scale);
+  }
+  fit();
+  addEventListener("resize", fit);
+
+  const start = new URLSearchParams(location.search).get("ex");
+  show(start in EXAMPLES ? start : "weather-bar");
+</script>
+</body>
+</html>
