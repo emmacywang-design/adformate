@@ -268,6 +268,25 @@
 .wi--aqi-hazardous .wi-face { animation: wi-shake-hard 1.9s ease-in-out infinite; }
 .wi--aqi-hazardous .wi-x    { animation: wi-xpulse 1.3s ease-in-out infinite; }
 
+/* 20. 限時優惠 —— 指針一格一格繞錶面中心走，左邊三條速度線依序往左刷過 */
+@keyframes wi-tick {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes wi-streak {
+  0%   { transform: translateX(6px);  opacity: 0; }
+  30%  { transform: translateX(0);    opacity: 1; }
+  70%  { transform: translateX(0);    opacity: 1; }
+  100% { transform: translateX(-4px); opacity: 0; }
+}
+.wi--countdown .wi-hand {
+  --ox: 48.0166px; --oy: 44.0938px;   /* 錶面中心 */
+  animation: wi-tick 6s steps(12) infinite;
+}
+.wi--countdown .wi-speed { animation: wi-streak 1.2s cubic-bezier(.3, 0, .2, 1) infinite; }
+.wi--countdown .wi-speed:nth-of-type(3) { animation-delay: .15s; }
+.wi--countdown .wi-speed:nth-of-type(4) { animation-delay: .3s; }
+
 /* -----------------------------------------------------------
    無障礙：使用者若在系統關掉動態效果，全部停下來
    ----------------------------------------------------------- */
