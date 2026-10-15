@@ -52,11 +52,11 @@
     touch-action: none; user-select: none; -webkit-user-select: none;
     cursor: grab;
     background: #ffe1ba;
-    opacity: 0; transform: scale(1.04); pointer-events: none;
-    transition: opacity .45s ease, transform .45s ease;
+    opacity: 0; pointer-events: none;
+    transition: opacity .45s ease;  /* 只用在關閉淡出；開啟時直接顯示 */
   }
   .ad.dragging { cursor: grabbing; }
-  .ad.show { opacity: 1; transform: none; pointer-events: auto; }
+  .ad.show { opacity: 1; pointer-events: auto; transition: none; }
   .ad img, .ad svg { display: block; -webkit-user-drag: none; }
   .ad img { pointer-events: none; }
   .title svg, .illust svg, .rabbit svg { width: 100%; height: 100%; overflow: visible; }
@@ -12548,7 +12548,6 @@
   let rotation = 0;          // 轉盤角度（順時針為正）
   let activeCut = 0;
   let tweenId = null;
-  let autoTimer = null;
   let idleTimer = null;
   let frameStart = performance.now();
   let removeSlideTimer = null;
@@ -12648,23 +12647,6 @@
     frameStart = performance.now();
   }
 
-  /* ---------- 開場自動旋轉示範（對應範例的 startAutoAnimation） ---------- */
-  function startAutoSpin() {
-    if (reduceMotion || new URLSearchParams(location.search).get('autoplay') === '0') return;
-    let step = 0;
-    const next = () => {
-      step++;
-      const target = step * SECTOR;
-      tweenTo(target, 900, () => {
-        showCut(cutAt(target), 'clockwise');
-        if (step < 3) autoTimer = setTimeout(next, 1300);
-        else console.log('%cAuto spin ended', 'color:#fff;background:#333;padding:2px 6px');
-      });
-    };
-    autoTimer = setTimeout(next, 900);
-  }
-  function stopAutoSpin() { clearTimeout(autoTimer); autoTimer = null; }
-
   /* ---------- 手勢提示：互動後隱藏，閒置 4 秒再出現 ---------- */
   function hideHint() { hand.classList.add('hide'); clearTimeout(idleTimer); }
   function scheduleHint() { clearTimeout(idleTimer); idleTimer = setTimeout(() => hand.classList.remove('hide'), 4000); }
@@ -12673,7 +12655,6 @@
   let drag = null;
   ad.addEventListener('pointerdown', e => {
     if (e.target.closest('#btnClose')) return;
-    stopAutoSpin();
     cancelAnimationFrame(tweenId);
     ad.setPointerCapture(e.pointerId);
     drag = { x: e.clientX, y: e.clientY, startRot: rotation, moved: false, samples: [{ t: e.timeStamp, r: rotation }], target: e.target };
@@ -12722,7 +12703,7 @@
   document.addEventListener('keydown', e => {
     if (!ad.classList.contains('show')) return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-      stopAutoSpin(); hideHint();
+      hideHint();
       const base = Math.round(rotation / SECTOR) * SECTOR;
       land(base + (e.key === 'ArrowRight' ? SECTOR : -SECTOR));
     }
@@ -12731,7 +12712,6 @@
 
   /* ---------- 開啟 / 關閉 ---------- */
   function openAd() {
-    stopAutoSpin();
     cancelAnimationFrame(tweenId);
     setRotation(0);
     clearTimeout(removeSlideTimer);
@@ -12746,10 +12726,8 @@
     replayBtn.classList.remove('show');
     layout();
     ad.classList.add('show');
-    startAutoSpin();
   }
   function closeAd() {
-    stopAutoSpin();
     trackFrameTime(activeCut);
     ad.classList.remove('show');
     replayBtn.classList.add('show');
@@ -12760,7 +12738,7 @@
 
   window.addEventListener('resize', layout);
   layout();
-  setTimeout(openAd, 600);
+  openAd();
 })();
 </script>
 </body>
