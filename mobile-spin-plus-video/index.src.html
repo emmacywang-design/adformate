@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>玉兔迎新春｜Spin 轉盤廣告 Demo（Video 版）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif;
+    background: #2b2b2e;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ---------- 手機外框（桌機預覽用） ---------- */
+  .phone {
+    position: relative;
+    width: 390px; height: 800px;
+    border-radius: 44px;
+    border: 10px solid #111;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,.45);
+  }
+  @media (max-width: 500px) {
+    body { display: block; background: #fff; }
+    .phone { width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+  }
+
+  /* ---------- 模擬新聞文章頁 ---------- */
+  .article { height: 100%; overflow-y: auto; color: #222; }
+  .article header { padding: 14px 16px; border-bottom: 1px solid #eee; font-weight: 700; font-size: 18px; }
+  .article .hero { height: 200px; background: #e9e6e1; }
+  .article h1 { font-size: 21px; line-height: 1.4; padding: 16px 16px 8px; }
+  .article .meta { color: #888; font-size: 12px; padding: 0 16px 12px; }
+  .article p { font-size: 15px; line-height: 1.8; padding: 0 16px 14px; color: #444; }
+  .article .line { height: 12px; margin: 0 16px 10px; background: #efefef; border-radius: 6px; }
+  .replay {
+    position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
+    border: 0; border-radius: 999px; padding: 12px 22px;
+    background: #d9452b; color: #fff; font-size: 15px; font-weight: 600;
+    box-shadow: 0 8px 20px rgba(217,69,43,.35); cursor: pointer;
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+  }
+  .replay.show { opacity: 1; pointer-events: auto; }
+
+  /* ---------- 廣告本體 ---------- */
+  .ad {
+    position: absolute; inset: 0; overflow: hidden;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    cursor: grab;
+    background: #ffe1ba;
+    opacity: 0; pointer-events: none;
+    transition: opacity .45s ease;  /* 只用在關閉淡出；開啟時直接顯示 */
+  }
+  .ad.dragging { cursor: grabbing; }
+  .ad.show { opacity: 1; pointer-events: auto; transition: none; }
+  .ad img, .ad svg { display: block; -webkit-user-drag: none; }
+  .ad img { pointer-events: none; }
+  .title svg, .illust svg, .rabbit svg { width: 100%; height: 100%; overflow: visible; }
+
+  /* 以 Figma 720×1280 座標為基準，JS 依螢幕縮放 */
+  .stage { position: absolute; left: 0; top: 0; width: 720px; height: 1280px; transform-origin: 0 0; }
+  .abs { position: absolute; }
+
+  .title { left: 28px; top: 100px; width: 664px; height: 203px; }
+  .card[data-cut="0"] .title { left: 18px; }
+
+  /* 卡片換場（同參考範例 spin_banner/style.css）：
+     每張卡片平時以底部中心為軸轉 180° 藏在畫面下方；
+     換場時從左（順時針）或右（逆時針）往上甩回 0°，蓋在目前卡片上 */
+  .cards { position: absolute; inset: 0; z-index: 0; }
+  .card {
+    position: absolute; left: 0; top: 0; width: 720px; height: 100%;
+    transform: rotate(180deg); transform-origin: bottom center;
+    z-index: 1;
+  }
+  .card.clockwise { transform: rotate(-180deg); }
+  .card.transition { transition: transform .5s; }
+  .card.active { z-index: 2; transform: rotate(0deg); }
+  .card.spinning { z-index: 3; transform: rotate(0deg); }
+  .card .bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* 卡片定位後，標題 + 插畫整組以回彈縮放跳出（同範例 safe-area-square-img）。
+     縮放套在 SVG 內的 <g class="pop">，不套在外層 div：外層有 transform/opacity 會自成一層，
+     multiply 陰影混合不到背景而先閃白 */
+  .content { position: absolute; inset: 0; }
+  .content .pop {
+    transform-box: view-box; transform: scale(0);
+    transition: transform .5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  }
+  .content.show .pop { transform: scale(1); }
+  /* Cut 1 改為影片：720×405 @ (0,320)，聲音鈕 45×45 @ (18,662) */
+  .video { left: 0; top: 320px; width: 720px; height: 405px; }
+  .video .pop { position: absolute; inset: 0; }
+  .video video { display: block; width: 100%; height: 100%; object-fit: cover; background: #e8b998; pointer-events: none; }
+  .btn-sound {
+    position: absolute; left: 18px; top: 342px; width: 45px; height: 45px;
+    border: 0; background: none; padding: 0; cursor: pointer;
+  }
+  .btn-sound img { width: 45px; height: 45px; }
+  .btn-sound::after { content: ""; position: absolute; inset: -14px; } /* 加大點擊範圍 */
+  /* 靜音狀態：Figma 只有開聲音圖示，靜音時在上面加一條斜線 */
+  .btn-sound.muted::before {
+    content: ""; position: absolute; left: 50%; top: 50%; width: 30px; height: 3px;
+    background: #fff; border-radius: 2px; box-shadow: 0 0 0 1.5px rgba(0,0,0,.45);
+    transform: translate(-50%,-50%) rotate(45deg);
+  }
+  .illust-2 { left: 16px; top: 279px; width: 689px; height: 607px; }
+  .illust-3 { left: 37px; top: 306px; width: 653px; height: 550px; }
+
+  .btn-close {
+    left: 648px; top: 190px; width: 48px; height: 48px;
+    cursor: pointer; z-index: 5;
+  }
+  .btn-close img { width: 48px; height: 48px; }
+  .btn-close::after { content: ""; position: absolute; inset: -16px; } /* 加大點擊範圍 */
+
+  /* 下半部：月亮轉盤，貼齊畫面底部 */
+  .bottom { left: 0; width: 720px; height: 1280px; pointer-events: none; }
+  .spinner { left: 80px; top: 1000px; width: 560px; height: 560px; }
+  .wheel { position: absolute; inset: 0; transform-origin: 280px 280px; will-change: transform; }
+  .wheel img { position: absolute; }
+  .moon-base { left: 0; top: 0; width: 560px; height: 560px; }
+  .shade-multiply { mix-blend-mode: multiply; }
+  .shade-overlay { mix-blend-mode: overlay; }
+
+  /* 兔子掛在轉盤上：rabbit-icon 200×200 @ (260,885)，月心 (360,1280) */
+  .rabbit {
+    position: absolute; left: 180px; top: -115px; width: 200px; height: 200px;
+    transform-origin: 100px 395px;
+    pointer-events: auto; cursor: pointer;
+  }
+
+  /* 滑動提示：左右箭頭 + 手指（Figma hand 420×163 @ 150,967），固定不跟轉盤轉 */
+  .hint { left: 150px; top: 967px; width: 420px; height: 163px; pointer-events: none; z-index: 4; transition: opacity .3s; }
+  .hint.hide { opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s; }
+  .arrow {
+    position: absolute; top: 0; width: 50px; height: 36px;
+    border: 0; background: none; padding: 0; cursor: pointer; pointer-events: auto;
+  }
+  .arrow img { width: 50px; height: 36px; }
+  .arrow::after { content: ""; position: absolute; inset: -24px -20px; } /* 加大點擊範圍 */
+  .arrow-left  { left: 0;     animation: nudge-left  1.6s ease-in-out infinite; }
+  .arrow-right { left: 370px; animation: nudge-right 1.6s ease-in-out infinite; }
+  .hand { left: 174px; top: 75px; width: 72px; height: 88px; }
+  .hand img { width: 72px; height: 88px; animation: swipe-hint 1.6s ease-in-out infinite; transform-origin: 50% 100%; }
+  @keyframes swipe-hint {
+    0%, 100% { transform: translateX(0) rotate(0); }
+    25% { transform: translateX(-28px) rotate(-8deg); }
+    75% { transform: translateX(28px) rotate(8deg); }
+  }
+  @keyframes nudge-left  { 0%, 50%, 100% { transform: translateX(0); } 25% { transform: translateX(-20px); } }
+  @keyframes nudge-right { 0%, 50%, 100% { transform: translateX(0); } 75% { transform: translateX(20px); } }
+
+  .logo { left: 634px; width: 86px; height: 70px; }
+
+  .toast {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%) scale(.9);
+    background: rgba(0,0,0,.78); color: #fff; font-size: 14px; line-height: 1.5;
+    padding: 10px 16px; border-radius: 10px; text-align: center; white-space: nowrap;
+    opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 10;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .content .pop, .card.transition { transition-duration: .01s; }
+    .hand img, .arrow { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <!-- 模擬發佈商文章頁 -->
+  <div class="article">
+    <header>每日新聞網</header>
+    <div class="hero"></div>
+    <h1>農曆新年將至，各地年貨大街湧現採買人潮</h1>
+    <div class="meta">生活中心／綜合報導　2026-10-13</div>
+    <p>隨著春節腳步接近，各地年貨大街陸續開張，糖果、柑橘與各式應景商品擺滿攤位，吸引民眾提早採買。</p>
+    <div class="line"></div><div class="line"></div><div class="line" style="width:70%"></div>
+    <p>業者表示，今年以兔年為主題的商品特別受歡迎，可愛造型禮盒更是送禮首選。</p>
+    <div class="line"></div><div class="line"></div><div class="line" style="width:55%"></div>
+  </div>
+  <button class="replay" id="replay" type="button">重新播放廣告</button>
+
+  <!-- ===== Spin 轉盤廣告 ===== -->
+  <div class="ad" id="ad" role="region" aria-label="玉兔迎新春 互動廣告：左右滑動月亮或點箭頭切換畫面">
+    <div class="stage" id="stage">
+      <!-- 三張卡片：背景 + 標題 + 插畫（插畫的 multiply 陰影在卡片內跟背景合成） -->
+      <div class="cards">
+        <div class="card active" data-cut="0">
+          <img class="bg" src="assets/bg-1.svg" alt="">
+          <div class="content show">
+            <div class="abs title" role="img" aria-label="玉兔迎新春 HAPPY CHINESE NEW YEAR"><!-- inline:title as title-1 --></div>
+            <div class="abs illust video">
+              <div class="pop">
+                <!-- 影片檔放 assets/cut1.mp4；沒有檔案時顯示 Figma 靜態畫面 -->
+                <video id="video" autoplay muted playsinline webkit-playsinline loop preload="auto" poster="assets/video-poster.jpg" aria-label="玉兔迎新春 廣告影片">
+                  <source src="assets/cut1.mp4" type="video/mp4">
+                </video>
+                <button class="btn-sound muted" id="btnSound" type="button" aria-label="開啟聲音" aria-pressed="false"><img src="assets/ic-sound.png" alt=""></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card" data-cut="1">
+          <img class="bg" src="assets/bg-2.svg" alt="">
+          <div class="content">
+            <div class="abs title" role="img" aria-label="玉兔迎新春 HAPPY CHINESE NEW YEAR"><!-- inline:title as title-2 --></div>
+            <div class="abs illust illust-2" role="img" aria-label="大吉橘子與玉兔"><!-- inline:illust-2 --></div>
+          </div>
+        </div>
+        <div class="card" data-cut="2">
+          <img class="bg" src="assets/bg-3.svg" alt="">
+          <div class="content">
+            <div class="abs title" role="img" aria-label="玉兔迎新春 HAPPY CHINESE NEW YEAR"><!-- inline:title as title-3 --></div>
+            <div class="abs illust illust-3" role="img" aria-label="吉祥橘子、元寶與玉兔"><!-- inline:illust-3 --></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="abs bottom" id="bottom">
+        <div class="abs spinner">
+          <!-- 月亮本體與坑洞（跟著轉） -->
+          <div class="wheel" id="moonWheel">
+            <img class="moon-base" src="assets/moon/v0.svg" alt="">
+            <img src="assets/moon/v1.svg"  style="inset:81.11% 26.99% 11.33% 64.98%" alt="">
+            <img src="assets/moon/v2.svg"  style="inset:59.2% 7.36% 37.89% 90.39%" alt="">
+            <img src="assets/moon/v3.svg"  style="inset:46% 92.28% 50.61% 4.4%" alt="">
+            <img src="assets/moon/v4.svg"  style="inset:22.26% 85.67% 73.88% 10.76%" alt="">
+            <img src="assets/moon/v5.svg"  style="inset:91.03% 57.82% 7.03% 39.85%" alt="">
+            <img src="assets/moon/v6.svg"  style="inset:83.42% 59.19% 12.56% 35.62%" alt="">
+            <img src="assets/moon/v7.svg"  style="inset:80.13% 37.43% 17.38% 60.07%" alt="">
+            <img src="assets/moon/v8.svg"  style="inset:48.87% 2.8% 46.09% 93.02%" alt="">
+            <img src="assets/moon/v9.svg"  style="inset:82.02% 20.21% 14.88% 75.86%" alt="">
+            <img src="assets/moon/v10.svg" style="inset:64.09% 12.13% 20.6% 72.7%" alt="">
+            <img src="assets/moon/v11.svg" style="inset:61.54% 12.11% 25.87% 70.7%" alt="">
+            <img src="assets/moon/v12.svg" style="inset:31.67% 80.46% 57.84% 7.74%" alt="">
+            <img src="assets/moon/v13.svg" style="inset:29.64% 78.88% 61.28% 8.43%" alt="">
+            <img src="assets/moon/v14.svg" style="inset:53.34% 82.17% 39.59% 10.37%" alt="">
+            <img src="assets/moon/v15.svg" style="inset:51.44% 81.2% 44.85% 9.99%" alt="">
+            <img src="assets/moon/v16.svg" style="inset:38.42% 5.24% 53.88% 86.97%" alt="">
+            <img src="assets/moon/v17.svg" style="inset:36.7% 5.97% 56.15% 85.54%" alt="">
+          </div>
+          <!-- 光影（固定不轉） -->
+          <img class="abs shade-multiply" src="assets/moon/v18.svg" style="inset:41.93% 0 0 0" alt="">
+          <img class="abs shade-overlay" src="assets/moon/v19.svg" style="inset:0.46% 19.36% 50.61% 19.36%" alt="">
+
+          <!-- 三隻兔子掛在轉盤上，各差 120° -->
+          <div class="wheel" id="rabbitWheel">
+            <div class="rabbit" data-cut="0" style="transform:rotate(0deg)"><!-- inline:rabbit-1 --></div>
+            <div class="rabbit" data-cut="1" style="transform:rotate(-120deg)"><!-- inline:rabbit-2 --></div>
+            <div class="rabbit" data-cut="2" style="transform:rotate(-240deg)"><!-- inline:rabbit-3 --></div>
+          </div>
+        </div>
+        <div class="abs hint" id="hint">
+          <button class="arrow arrow-left" id="arrowLeft" type="button" aria-label="上一個畫面"><img src="assets/arrow-left.svg" alt=""></button>
+          <button class="arrow arrow-right" id="arrowRight" type="button" aria-label="下一個畫面"><img src="assets/arrow-right.svg" alt=""></button>
+          <div class="abs hand"><img src="assets/hand-icon.svg" alt=""></div>
+        </div>
+        <img class="abs logo" src="assets/logo-onead.svg" style="top:1210px" alt="OneAD">
+      </div>
+
+      <button class="abs btn-close" id="btnClose" type="button" aria-label="關閉廣告" style="border:0;background:none;padding:0">
+        <img src="assets/btn-close.svg" alt="">
+      </button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const DESIGN_W = 720, DESIGN_H = 1280;
+  const SECTOR = 120;                 // 三等分轉盤
+  const WHEEL_RADIUS = 295;           // 月心到兔子中心（設計稿 px）
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const ad = document.getElementById('ad');
+  const stage = document.getElementById('stage');
+  const bottom = document.getElementById('bottom');
+  const moonWheel = document.getElementById('moonWheel');
+  const rabbitWheel = document.getElementById('rabbitWheel');
+  const hint = document.getElementById('hint');
+  const toast = document.getElementById('toast');
+  const replayBtn = document.getElementById('replay');
+  const cards = [...stage.querySelectorAll('.card')];
+  const illusts = [...stage.querySelectorAll('.illust')];
+  const contents = [...stage.querySelectorAll('.content')];
+  const video = document.getElementById('video');
+  const btnSound = document.getElementById('btnSound');
+
+  let scale = 1, stageH = DESIGN_H, wheelCenterY = DESIGN_H;
+  let rotation = 0;          // 轉盤角度（順時針為正）
+  let activeCut = 0;
+  let tweenId = null;
+  let frameStart = performance.now();
+  let removeSlideTimer = null;
+
+  /* ---------- 版面縮放：寬度撐滿，高度多出的空間放在插畫上下 ---------- */
+  function layout() {
+    const w = ad.clientWidth, h = ad.clientHeight;
+    scale = w / DESIGN_W;
+    stageH = h / scale;
+    let offsetX = 0;
+    if (stageH < DESIGN_H) {            // 比 9:16 寬的螢幕：改以高度為準並置中
+      scale = h / DESIGN_H;
+      stageH = DESIGN_H;
+      offsetX = (w - DESIGN_W * scale) / 2;
+    }
+    stage.style.height = stageH + 'px';
+    stage.style.transform = `translate(${offsetX}px,0) scale(${scale})`;
+
+    const extra = stageH - DESIGN_H;
+    bottom.style.top = extra + 'px';
+    wheelCenterY = extra + DESIGN_H;
+    illusts.forEach(el => { el.style.marginTop = (extra / 2) + 'px'; });
+    // 整組內容（標題 y100 ～ 插畫底 y885）以共同中心點縮放，換算成各 SVG 自己的座標
+    const originY = (100 + 885 + extra / 2) / 2;
+    contents.forEach(content => {
+      content.querySelectorAll('.title, .illust').forEach(box => {
+        const cs = getComputedStyle(box);
+        const left = parseFloat(cs.left), top = parseFloat(cs.top) + parseFloat(cs.marginTop || 0);
+        box.querySelector('.pop').style.transformOrigin = `${360 - left}px ${originY - top}px`;
+      });
+    });
+  }
+
+  /* ---------- 轉盤 ---------- */
+  function setRotation(deg) {
+    rotation = deg;
+    moonWheel.style.transform = `rotate(${deg}deg)`;
+    rabbitWheel.style.transform = `rotate(${deg}deg)`;
+  }
+  const cutAt = deg => ((Math.round(deg / SECTOR) % 3) + 3) % 3;
+
+  function tweenTo(target, duration, onDone) {
+    cancelAnimationFrame(tweenId);
+    const from = rotation, t0 = performance.now();
+    if (reduceMotion) duration = 1;
+    const ease = t => 1 - Math.pow(1 - t, 3);
+    (function step(now) {
+      const p = Math.min(1, (now - t0) / duration);
+      setRotation(from + (target - from) * ease(p));
+      if (p < 1) tweenId = requestAnimationFrame(step);
+      else onDone && onDone();
+    })(t0);
+  }
+
+  /* ---------- 切換畫面（對應範例的 invitationLandOnSlide） ---------- */
+  function showCut(idx, direction) {
+    if (idx === activeCut) return;
+    trackFrameTime(activeCut);
+    const card = cards[idx];
+
+    // 還在甩入中的卡片退到下一層，讓新卡片蓋在最上面
+    cards.forEach(c => { if (c !== card && c.classList.contains('spinning')) c.classList.replace('spinning', 'active'); });
+
+    // 先回到起始位置：順時針從左下方（-180°）、逆時針從右下方（180°）
+    card.classList.remove('transition', 'spinning', 'active');
+    card.classList.toggle('clockwise', direction === 'clockwise');
+    void card.offsetWidth;
+    card.classList.add('transition', 'spinning');
+
+    // 甩入完成後：新卡片定位，其他卡片收回下方，插畫跳出
+    clearTimeout(removeSlideTimer);
+    removeSlideTimer = setTimeout(() => {
+      cards.forEach((c, i) => {
+        if (i === idx) c.classList.replace('spinning', 'active');
+        else c.classList.remove('transition', 'spinning', 'active', 'clockwise');
+      });
+      contents.forEach((el, i) => el.classList.toggle('show', i === idx));
+    }, reduceMotion ? 20 : 550);
+
+    activeCut = idx;
+    syncVideo();
+    console.log(`%cCut ${idx + 1} shown (${direction})`, 'color:#fff;background:#d9452b;padding:2px 6px');
+  }
+
+  function land(target) {
+    const direction = target > rotation ? 'clockwise' : 'counter-clockwise';
+    const dist = Math.abs(target - rotation);
+    tweenTo(target, Math.min(1100, 380 + dist * 3), () => {
+      setRotation(target);
+      showCut(cutAt(target), direction);
+    });
+  }
+
+  function trackFrameTime(idx) {
+    const sec = ((performance.now() - frameStart) / 1000).toFixed(1);
+    console.log(`frame${idx + 1} 停留 ${sec}s`);
+    frameStart = performance.now();
+  }
+
+  /* ---------- 手勢提示（手指 + 箭頭）：第一次互動後整組隱藏，重新播放才再出現 ---------- */
+  function hideHint() { hint.classList.add('hide'); }
+
+  /* ---------- 拖曳 + 慣性 + 吸附 ---------- */
+  let drag = null;
+  ad.addEventListener('pointerdown', e => {
+    if (e.target.closest('#btnClose, .arrow, #btnSound')) return;
+    cancelAnimationFrame(tweenId);
+    ad.setPointerCapture(e.pointerId);
+    drag = { x: e.clientX, y: e.clientY, startRot: rotation, moved: false, samples: [{ t: e.timeStamp, r: rotation }], target: e.target };
+  });
+  ad.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.moved && Math.hypot(dx, e.clientY - drag.y) < 6) return;
+    if (!drag.moved) { drag.moved = true; ad.classList.add('dragging'); hideHint(); }
+    const deg = (dx / scale) / WHEEL_RADIUS * 180 / Math.PI;
+    setRotation(drag.startRot + deg);
+    drag.samples.push({ t: e.timeStamp, r: rotation });
+    if (drag.samples.length > 6) drag.samples.shift();
+  });
+  const endDrag = e => {
+    if (!drag) return;
+    ad.classList.remove('dragging');
+    const d = drag; drag = null;
+    if (!d.moved) { handleTap(d.target); return; }
+    // 依放手速度往前投射（類似 ThrowProps），最多一次轉兩格
+    const a = d.samples[0], b = d.samples[d.samples.length - 1];
+    const v = b.t > a.t ? (b.r - a.r) / (b.t - a.t) : 0;     // deg/ms
+    let projected = rotation + v * 260;
+    projected = Math.max(d.startRot - 2 * SECTOR, Math.min(d.startRot + 2 * SECTOR, projected));
+    land(Math.round(projected / SECTOR) * SECTOR);
+  };
+  ad.addEventListener('pointerup', endDrag);
+  ad.addEventListener('pointercancel', endDrag);
+
+  /* ---------- 點擊導外（對應範例的 sectorClicked → clickTag） ---------- */
+  function handleTap(target) {
+    const hit = target.closest('.card, .rabbit, .title');
+    if (!hit) return;
+    const tag = ['clickTAG', 'clickTAG1', 'clickTAG2'][activeCut];
+    showToast(`前往廣告主頁面<br>Cut ${activeCut + 1}・${tag}`);
+    console.log('click →', tag);
+  }
+  function showToast(html) {
+    toast.innerHTML = html;
+    toast.classList.add('show');
+    clearTimeout(showToast.t);
+    showToast.t = setTimeout(() => toast.classList.remove('show'), 1400);
+  }
+
+  /* ---------- 箭頭 / 鍵盤：一次轉一格，方向同往該側滑動 ---------- */
+  function stepCut(dir) {
+    hideHint();
+    const base = Math.round(rotation / SECTOR) * SECTOR;
+    land(base + dir * SECTOR);
+  }
+  document.getElementById('arrowLeft').addEventListener('click', () => stepCut(-1));
+  document.getElementById('arrowRight').addEventListener('click', () => stepCut(1));
+  document.addEventListener('keydown', e => {
+    if (!ad.classList.contains('show')) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') stepCut(e.key === 'ArrowRight' ? 1 : -1);
+    if (e.key === 'Escape') closeAd();
+  });
+
+  /* ---------- 影片：只在 Cut 1 播放，離開暫停、回來接著播 ---------- */
+  function syncVideo() {
+    if (activeCut === 0 && ad.classList.contains('show')) video.play().catch(() => {});
+    else video.pause();
+  }
+  function setMuted(muted) {
+    video.muted = muted;
+    btnSound.classList.toggle('muted', muted);
+    btnSound.setAttribute('aria-pressed', String(!muted));
+    btnSound.setAttribute('aria-label', muted ? '開啟聲音' : '關閉聲音');
+  }
+  btnSound.addEventListener('click', e => { e.stopPropagation(); setMuted(!video.muted); });
+  // 影片載入完成時再補一次播放；若被瀏覽器擋下（如 iOS 低耗電模式），第一次觸碰時補播
+  video.addEventListener('canplay', syncVideo);
+  ad.addEventListener('pointerdown', () => { if (video.paused) syncVideo(); }, true);
+
+  /* ---------- 開啟 / 關閉 ---------- */
+  function openAd() {
+    cancelAnimationFrame(tweenId);
+    setRotation(0);
+    clearTimeout(removeSlideTimer);
+    cards.forEach((c, i) => {
+      c.classList.remove('transition', 'spinning', 'clockwise');
+      c.classList.toggle('active', i === 0);
+    });
+    contents.forEach((el, i) => el.classList.toggle('show', i === 0));
+    activeCut = 0;
+    frameStart = performance.now();
+    hint.classList.remove('hide');
+    replayBtn.classList.remove('show');
+    layout();
+    ad.classList.add('show');
+    setMuted(true);              // 行動裝置自動播放必須靜音
+    try { video.currentTime = 0; } catch (e) {}
+    syncVideo();
+  }
+  function closeAd() {
+    trackFrameTime(activeCut);
+    ad.classList.remove('show');
+    syncVideo();
+    replayBtn.classList.add('show');
+    console.log('%cAd closed', 'color:#fff;background:red;padding:2px 6px');
+  }
+  document.getElementById('btnClose').addEventListener('click', e => { e.stopPropagation(); closeAd(); });
+  replayBtn.addEventListener('click', openAd);
+
+  window.addEventListener('resize', layout);
+  layout();
+  openAd();
+})();
+</script>
+</body>
+</html>
