@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Before After Banner — BMW iX3 Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: #1a1a1a; }
+    body { display: flex; align-items: center; justify-content: center; }
+
+    /* 設計稿原尺寸 720×1280，依視窗等比縮放 */
+    .stage {
+      position: relative;
+      width: 720px;
+      height: 1280px;
+      flex: none;
+      overflow: hidden;
+      background: #fff;
+      transform-origin: center center;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .stage.closed { display: none; }
+
+    .layer {
+      position: absolute;
+      inset: 0;
+      width: 720px;
+      height: 1280px;
+      object-fit: cover;
+      pointer-events: none;
+      -webkit-user-drag: none;
+    }
+    /* before 疊在 after 上，用 clip-path 只露出分隔線左側 */
+    .before { clip-path: inset(0 calc(720px - var(--split)) 0 0); }
+
+    .bar {
+      position: absolute;
+      top: 0;
+      left: calc(var(--split) - 25px);
+      width: 50px;
+      height: 1280px;
+      cursor: ew-resize;
+    }
+    .bar-line {
+      position: absolute;
+      left: 50%;
+      width: 6px;
+      height: 608px;
+      margin-left: -3px;
+      background: #fff;
+    }
+    .bar-line.top { top: 0; }
+    .bar-line.bottom { top: 672px; }
+    .handle-circle {
+      position: absolute;
+      top: 616px;
+      left: 50%;
+      width: 48px;
+      height: 48px;
+      margin-left: -24px;
+    }
+    .handle-arrows {
+      position: absolute;
+      top: 628px;
+      left: 50%;
+      width: 114px;
+      height: 24px;
+      margin-left: -57px;
+      animation: hint 1.2s ease-in-out infinite;
+    }
+    .stage.dragging .handle-arrows { animation: none; }
+    @keyframes hint { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+    .animate .before { transition: clip-path .5s ease; }
+    .animate .bar { transition: left .5s ease; }
+    /* 導出後分隔線淡出 */
+    .stage.exited .bar { opacity: 0; pointer-events: none; transition: opacity .5s ease, left .5s ease; }
+
+    .btn-close {
+      position: absolute;
+      top: 190px;
+      left: 648px;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+    }
+    .logo-onead {
+      position: absolute;
+      top: 1233.3px;
+      left: 663.3px;
+      width: 27.36px;
+      height: 21.25px;
+      pointer-events: none;
+    }
+
+    .replay {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      border: 0;
+      border-radius: 999px;
+      background: #fff;
+      color: #1a1a1a;
+      font: 500 14px/1 system-ui, -apple-system, "PingFang TC", sans-serif;
+      cursor: pointer;
+      display: none;
+    }
+    .replay.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage" style="--split: 360px">
+    <img class="layer after" src="assets/after.png" alt="全新 BMW iX3（藍）" draggable="false" />
+    <img class="layer before" src="assets/before.png" alt="全新 BMW iX3（紅）" draggable="false" />
+
+    <div class="bar" id="bar">
+      <div class="bar-line top"></div>
+      <div class="bar-line bottom"></div>
+      <img class="handle-circle" src="assets/handle-circle.svg" alt="" draggable="false" />
+      <img class="handle-arrows" src="assets/handle-arrows.svg" alt="" draggable="false" />
+    </div>
+
+    <img class="btn-close" id="btnClose" src="assets/btn-close.svg" alt="關閉" draggable="false" />
+    <img class="logo-onead" src="assets/logo-onead.svg" alt="OneAD" draggable="false" />
+  </div>
+
+  <button class="replay" id="replay" type="button">重新顯示廣告</button>
+
+  <script>
+    (function () {
+      var W = 720, H = 1280;
+      var CLICK_URL = 'https://puma.taipei/soonmook/1';
+      var stage = document.getElementById('stage');
+      var btnClose = document.getElementById('btnClose');
+      var replay = document.getElementById('replay');
+      var scale = 1;
+      var split = W / 2;
+      var dragging = false;
+      var exited = false;
+      var timers = [];
+
+      function fit() {
+        scale = Math.min(window.innerWidth / W, window.innerHeight / H);
+        stage.style.transform = 'scale(' + scale + ')';
+      }
+
+      function setSplit(x, animate) {
+        split = Math.max(0, Math.min(W, x));
+        stage.classList.toggle('animate', !!animate);
+        stage.style.setProperty('--split', split + 'px');
+      }
+
+      function clearIntro() {
+        timers.forEach(clearTimeout);
+        timers = [];
+      }
+
+      // 開場提示：左 → 右 → 回中間
+      function intro() {
+        clearIntro();
+        var t = 400;
+        [0.24, 0.78, 0.5].forEach(function (p) {
+          timers.push(setTimeout(function () {
+            if (!dragging && !exited) setSplit(W * p, true);
+          }, t));
+          t += 650;
+        });
+      }
+
+      function toStageX(clientX) {
+        return (clientX - stage.getBoundingClientRect().left) / scale;
+      }
+
+      stage.addEventListener('pointerdown', function (e) {
+        if (e.target === btnClose || exited) return;
+        dragging = true;
+        clearIntro();
+        stage.classList.add('dragging');
+        stage.setPointerCapture(e.pointerId);
+        setSplit(toStageX(e.clientX), true);
+      });
+      stage.addEventListener('pointermove', function (e) {
+        if (!dragging) return;
+        setSplit(toStageX(e.clientX), false);
+      });
+      function endDrag(e) {
+        if (!dragging) return;
+        dragging = false;
+        stage.classList.remove('dragging');
+        // 放開後吸附到較近的一側，完整呈現單一畫面
+        setSplit(split < W / 2 ? 0 : W, true);
+        // 放開即導出；需在使用者手勢內同步呼叫，避免被瀏覽器擋彈出視窗
+        if (e.type === 'pointerup') {
+          window.open(CLICK_URL, '_blank');
+          exited = true;
+          stage.classList.add('exited');
+        }
+      }
+      stage.addEventListener('pointerup', endDrag);
+      stage.addEventListener('pointercancel', endDrag);
+
+      btnClose.addEventListener('click', function () {
+        clearIntro();
+        stage.classList.add('closed');
+        replay.classList.add('show');
+      });
+      replay.addEventListener('click', function () {
+        replay.classList.remove('show');
+        stage.classList.remove('closed', 'exited');
+        exited = false;
+        setSplit(W / 2, false);
+        intro();
+      });
+
+      window.addEventListener('resize', fit);
+      fit();
+
+      // 廣告一半以上進入畫面才播開場提示
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+          if (entries[0].isIntersecting) intro();
+        }, { threshold: 0.5 }).observe(stage);
+      } else {
+        intro();
+      }
+    })();
+  </script>
+</body>
+</html>
